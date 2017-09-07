@@ -1,0 +1,32 @@
+#sample Makefile for using OpenGL of Red Hat Linux 7.x
+#CS 420, Tong Yu, Fall 2002
+#e.g. make PRGO=helix
+#PROG	= helix
+#PROG	= helix-tube
+PROG	= conical_helix
+TOP = /pool/u/class/cs520/Mesa-7.0.3
+CFLAGS	= -w -s -O2 -ansi -DSHM
+XLIBS	= -lX11 -lXext -lXmu -lXext -lXmu -lXt -lXi -lSM -lICE
+LIBS	= -lglut -lGLU -lGL -lSDL -lpthread
+MATHS	= /pool/u/class/cs621/raytrace/VrMath/
+INCLS	= -I/usr/X11R/include -I/share/mesa/include  -I../mesh -I$(TOP)/include -I$(MATHS)
+LIBDIR	= -L/usr/X11/lib -L/usr/X11R6/lib -L$(TOP)/lib
+#source codes
+SRCS = $(PROG).cpp  
+#substitute .cpp by .o to obtain object filenames
+OBJS = $(SRCS:.cpp=.o) 
+
+#$< evaluates to the target's dependencies, 
+#$@ evaluates to the target
+
+$(PROG): $(OBJS) $(OBJS1)
+	g++ -o $@ $(OBJS) $(OBJS1)  $(LIBDIR) $(LIBS) $(XLIBS)
+
+$(OBJS): 
+	g++ -c  $*.cpp $(INCLS) 
+
+$(OBJS1): 
+	g++ -c  $*.cpp $(INCLS) 
+clean:
+	rm $(OBJS) 
+

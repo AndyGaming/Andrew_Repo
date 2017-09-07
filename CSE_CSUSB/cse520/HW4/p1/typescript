@@ -1,0 +1,45 @@
+Script started on Thu 12 Mar 2015 06:31:46 PM PDT
+]0;004194007@jb358-7:/students/csci/004194007/cse520/HW4/p1[?1034h[004194007@jb358-7 p1]$ ./find_knot 
+
+Please enter the number of control points: 8
+Please enter the degree of spline: 3
+
+[Number of control points] 8
+[Degree of spline] 3
+
+[Knot vector] 
+U = ( 0 0 0 0 1 2 3 4 5 5 5 5 )
+
+]0;004194007@jb358-7:/students/csci/004194007/cse520/HW4/p1[004194007@jb358-7 p1]$ ./find_knot 
+
+Please enter the number of control points: 7
+Please enter the degree of spline: 2
+
+[Number of control points] 7
+[Degree of spline] 2
+
+[Knot vector] 
+U = ( 0 0 0 1 2 3 4 5 5 5 )
+
+]0;004194007@jb358-7:/students/csci/004194007/cse520/HW4/p1[004194007@jb358-7 p1]$ ./find_knot 
+
+Please enter the number of control points: 5
+Please enter the degree of spline: 6
+
+Invalid input. Order should be less than control points. 
+
+]0;004194007@jb358-7:/students/csci/004194007/cse520/HW4/p1[004194007@jb358-7 p1]$ ./find_knot 
+
+Please enter the number of control points: 9
+Please enter the degree of spline: 5
+
+[Number of control points] 9
+[Degree of spline] 5
+
+[Knot vector] 
+U = ( 0 0 0 0 0 0 1 2 3 4 4 4 4 4 4 )
+
+]0;004194007@jb358-7:/students/csci/004194007/cse520/HW4/p1[004194007@jb358-7 p1]$ exit
+exit
+
+Script done on Thu 12 Mar 2015 06:32:36 PM PDT

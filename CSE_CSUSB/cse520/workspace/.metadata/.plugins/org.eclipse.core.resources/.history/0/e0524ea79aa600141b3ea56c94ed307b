@@ -1,0 +1,147 @@
+package cse520.icosahedron;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+import android.opengl.GLSurfaceView;
+import android.opengl.GLU;
+import android.os.SystemClock;
+import android.view.MotionEvent;
+
+public class IcoRenderer implements GLSurfaceView.Renderer {
+	public float angleX = 0.0f; //rotation angle
+	public float angleZ = 0.0f;
+	private Ico ico = new Ico();
+	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+		// Set the background frame color to grey, opaque
+		gl.glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
+		gl.glEnable( GL10.GL_CULL_FACE ); //Enable culling faces
+		gl.glCullFace ( GL10.GL_BACK ); //don’t render back faces
+	}
+	
+	public void onDrawFrame(GL10 gl) {
+		// Redraw background color
+		gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
+		// Set GL_MODELVIEW transformation mode
+		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glLoadIdentity(); // Reset the matrix to identity matrix
+		// Move objects away from view point to observe
+		gl.glTranslatef(0.0f, 0.0f, -7.0f);
+		// Rotate about a diagonal of cube
+		SystemClock.sleep(10);
+		angleX -= 1;
+		angleZ -= 2;
+		gl.glRotatef(angleX, 1, 0, 0);
+		gl.glRotatef(angleZ, 0, 0, 1);
+		ico.draw(gl); // Draw the cube
+		gl.glLoadIdentity(); // Reset transformation matrix
+	}
+	
+	@Override
+	public void onSurfaceChanged(GL10 gl, int width, int height) {
+		gl.glViewport(0, 0, width, height);
+		gl.glMatrixMode(GL10.GL_PROJECTION);
+		gl.glLoadIdentity(); // Reset projection matrix
+		// Setup viewing volume
+		GLU.gluPerspective(gl,45.0f,(float)width/(float)height,0.1f,100.0f);
+		gl.glViewport(0, 0, width, height);
+		gl.glMatrixMode(GL10.GL_MODELVIEW);
+		gl.glLoadIdentity(); // Reset transformation matrix
+	}
+}
+
+class Ico {
+	private FloatBuffer vertexBuffer;
+	private FloatBuffer colorBuffer;
+	private ByteBuffer indexBuffer;
+	
+	// Coordinates of 8 vertices of 6 cube faces
+	private float vertices[] = {
+			  0.0f, 0.0f, 0.951057f,
+			  0.0f, 0.850651f, 0.425325f,
+			  0.809017f, 0.262866f, 0.425325f,
+			  0.5f, -0.688191f, 0.425325f,
+			  -0.5f, -0.688191f, 0.425325f, 
+			  -0.809017f, 0.262866f, 0.425325f,
+			  0.0f, -0.850651f, -0.425325f,
+			  -0.809017f, -0.262866f, -0.425325f,
+			  -0.5f, 0.688191f, -0.425325f,
+			  0.5f, 0.688191f, -0.425325f, 
+			  0.809017f, -0.262866f, -0.425325f, 
+			  0.0f, 0.0f, -0.951057f		
+	};
+
+	// Colors of vertices
+	private float colors[] = {
+			0.5f, 0.0f, 1.0f, 1.0f,		1.0f, 0.5f, 0.0f, 1.0f,
+			1.0f, 0.5f, 0.0f, 1.0f,		1.0f, 0.5f, 0.0f, 1.0f,
+			1.0f, 0.5f, 0.0f, 1.0f, 	0.5f, 0.0f, 1.0f, 1.0f,
+			0.0f, 1.0f, 1.0f, 1.0f, 	1.0f, 0.0f, 1.0f, 1.0f,
+			1.0f, 0.5f, 0.0f, 1.0f, 	0.5f, 0.0f, 1.0f, 1.0f,
+			0.0f, 1.0f, 1.0f, 1.0f, 	1.0f, 0.0f, 1.0f, 1.0f 
+	};
+
+	//indices of 12 triangles (6 squares) in GL_CCW
+	//referencing vertices[] array coordinates
+	private byte indices[] = {
+			  2,1,0,		3,2,0,		0,4,3,		4,6,3,
+			  6,10,3,		3,10,2,		10,9,2,		1,2,9,
+			  10,6,11,		11,9,10,	5,0,1,		4,0,5,
+			  7,6,4,		7,4,5,		5,8,7,		1,8,5,
+			  9,8,1,		8,9,11,		7,8,11,		6,7,11		
+	};
+
+	public Ico() {
+		//initialize vertex Buffer for cube
+		//argument=(# of coordinate values*4 bytes per float)
+		ByteBuffer byteBuf = ByteBuffer.allocateDirect(vertices.length * 4);
+		byteBuf.order(ByteOrder.nativeOrder());
+		//create a floating point buffer from the ByteBuffer
+		vertexBuffer = byteBuf.asFloatBuffer();
+		//add the vertices coordinates to the FloatBuffer
+		vertexBuffer.put(vertices);
+		//set the buffer to read the first vertex coordinates
+		vertexBuffer.position(0);
+		/*
+		//Do the same to colors array
+		byteBuf = ByteBuffer.allocateDirect(colors.length * 4);
+		byteBuf.order(ByteOrder.nativeOrder());
+		colorBuffer = byteBuf.asFloatBuffer();
+		colorBuffer.put(colors);
+		colorBuffer.position(0); */
+
+		//indices are integers
+		indexBuffer = ByteBuffer.allocateDirect(indices.length);
+		indexBuffer.put(indices);
+		indexBuffer.position(0);
+	}
+	
+	 private void setColor ( GL10 gl,  int i )
+	  {
+	     float R = (float) (i % 3) / 3;  
+	     float G = (float) (i % 4) / 4;  
+	     float B = (float) (i % 5) / 5;  
+	     gl.glColor4f( R, G, B, 0 );
+	  }  
+	
+	//Typical drawing routine using vertex array
+	public void draw(GL10 gl) {
+		//Counterclockwise order for front face vertices
+		gl.glFrontFace(GL10.GL_CCW);
+		//Points to the vertex buffers
+		gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexBuffer);
+		//gl.glColorPointer(4, GL10.GL_FLOAT, 0, colorBuffer);
+		//Enable client states
+		gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
+		gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+		//Draw vertices as triangles
+		for(int i = 0; i < 20; i++)
+		 	  setColor ( gl, i );
+		gl.glDrawElements(GL10.GL_TRIANGLES, 60, GL10.GL_UNSIGNED_BYTE, indexBuffer);
+		//Disable client state
+		gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
+		gl.glDisableClientState(GL10.GL_COLOR_ARRAY);
+	}
+}
