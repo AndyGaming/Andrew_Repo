@@ -1,5 +1,8 @@
 #include <Qt\qapplication.h>
 #include <MeGlWindow.h>
+#include <iostream>
+
+using namespace std;
 
 int main(int argc, char* argv[])
 {
