@@ -1,3 +1,4 @@
+# CSE_CSUSB
 
 All the works I did in undergrad, including Computer Graphics (CSE 420), Advanced Computer Graphics (CSE 520), and Artificial Intelligence (CSE 512). <br> 
  <br>
