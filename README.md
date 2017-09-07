@@ -1,4 +1,8 @@
 # Andrew_Repo
-All my coding works for EAE. 
 
-Shader Development class assignments. 
+Andrew Liu
+Technical Artist 
+Level Designer
+
+AndrewLiu.Gaming@gmail.com
+Liu-Yazhuo.com
