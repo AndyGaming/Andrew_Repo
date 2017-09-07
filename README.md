@@ -1,8 +1,8 @@
 # Andrew_Repo
 
-Andrew Liu
-Technical Artist 
-Level Designer
+Andrew Liu <br>
+Technical Artist <br>
+Level Designer <br>
 
-AndrewLiu.Gaming@gmail.com
-Liu-Yazhuo.com
+AndrewLiu.Gaming@gmail.com <br>
+www.Liu-Yazhuo.com 
