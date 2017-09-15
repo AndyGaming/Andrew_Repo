@@ -7,5 +7,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MeGlWindow.h" />
+    <ClInclude Include="Vertex.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VertexShader.glsl" />
+    <None Include="FragmentShader.glsl" />
   </ItemGroup>
 </Project>
