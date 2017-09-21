@@ -16,7 +16,7 @@ GLuint programID;
 glm::vec3 position;
 float angle = 0.0f;
 float scaling = 1.0f;
-bool isBig = false;
+bool isBig = true;
 
 string readShader(const char* fileName)
 {
