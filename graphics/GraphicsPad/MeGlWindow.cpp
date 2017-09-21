@@ -8,69 +8,14 @@
 
 using namespace std;
 
-extern const char* vertexShaderCode;
-extern const char* fragmentShaderCode;
-
 const uint NUM_VERTICES_PER_TRI = 3;
 const uint NUM_FLOATS_PER_VERTICE = 6;
 const uint VERTEX_BYTE_SIZE = NUM_FLOATS_PER_VERTICE * sizeof(float);
+GLuint programID;
 
-void sendContent()
-{
-	/*static GLfloat vertexPos[] = {
-		+0.0f, +0.0f,
-		+1.0f, +0.0f, +0.0f,
-		-1.0f, +1.0f,
-		+0.0f, +1.0f, +0.0f,
-		-1.0f, -1.0f,
-		+0.0f, +0.0f, +1.0f,
-		
-		+0.75f, -0.75f,
-		+1.0f, +0.0f, +1.0f,
-		+0.75f, +0.75f,
-		+0.0f, +1.0f, +1.0f,
-	};*/
-
-	// Vertex positions on the screen
-	Vertex triPos[] = {
-		glm::vec3(+0.0f, +0.0f, +0.0f),
-		glm::vec3(+1.0f, +0.0f, +0.0f),
-
-		glm::vec3(-1.0f, +1.0f, +0.0f),
-		glm::vec3(+0.0f, +1.0f, +0.0f),
-		
-		glm::vec3(-1.0f, -1.0f, +0.0f),
-		glm::vec3(+0.0f, +0.0f, +1.0f),
-
-		glm::vec3(+0.75f, -0.75f, +0.0f),
-		glm::vec3(+1.0f, +0.0f, +1.0f),
-
-		glm::vec3(+0.75f, +0.75f, +0.0f),
-		glm::vec3(+0.0f, +1.0f, +1.0f),
-	};
-
-	// Order of drawing
-	static GLushort indices[] = {
-		0, 1, 2,
-	//	0, 3, 4
-	};
-
-	glm::mat3 transform = glm::mat3(glm::translate(0.5f, 0.0f, 0.0f));
-
-	GLuint bufferID;
-	glGenBuffers(1, &bufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(triPos) + sizeof(indices), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(triPos), triPos);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triPos), sizeof(indices), indices);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (char*)(sizeof(float) * 3));
-}
+glm::vec3 position;
+float angle = 0.0f;
+bool isTranslate = true;
 
 string readShader(const char* fileName)
 {
@@ -95,7 +40,6 @@ void installShaders()
 	const GLchar* adapter[1];
 	string temp = readShader("VertexShader.glsl");
 	adapter[0] = temp.c_str();
-	//adapter[0] = vertexShaderCode;
 	glShaderSource(vertexShaderID, 1, adapter, 0);
 	temp = readShader("FragmentShader.glsl");
 	adapter[0] = temp.c_str();
@@ -104,7 +48,7 @@ void installShaders()
 	glCompileShader(vertexShaderID);
 	glCompileShader(fragmentShaderID);
 
-	GLuint programID = glCreateProgram();
+	programID = glCreateProgram();
 	glAttachShader(programID, vertexShaderID);
 	glAttachShader(programID, fragmentShaderID);
 
@@ -112,18 +56,100 @@ void installShaders()
 	glUseProgram(programID);
 }
 
+void sendContent()
+{
+	// Vertex positions on the screen
+	Vertex triPos[] = {
+		glm::vec3(+0.0f, +0.0f, +1.0f),
+		glm::vec3(+1.0f, +0.0f, +0.0f),
+
+		glm::vec3(-1.0f, +1.0f, +1.0f),
+		glm::vec3(+0.0f, +1.0f, +0.0f),
+		
+		glm::vec3(-1.0f, -1.0f, +1.0f),
+		glm::vec3(+0.0f, +0.0f, +1.0f),
+
+		glm::vec3(+0.75f, -0.75f, +1.0f),
+		glm::vec3(+1.0f, +0.0f, +1.0f),
+
+		glm::vec3(+0.75f, +0.75f, +1.0f),
+		glm::vec3(+0.0f, +1.0f, +1.0f),
+	};
+
+	// Order of drawing
+	static GLushort indices[] = {
+		0, 1, 2,
+	//	0, 3, 4
+	};
+	
+	GLuint bufferID;
+	glGenBuffers(1, &bufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(triPos) + sizeof(indices), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(triPos), triPos);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triPos), sizeof(indices), indices);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (char*)(sizeof(float) * 3));
+}
+
+void transformShape()
+{	
+	glm::mat4 rotate = glm::rotate(angle, 0.0f, 0.0f, 1.0f);
+	GLint rotateLoc = glGetUniformLocation(programID, "rotate");
+	glUniformMatrix4fv(rotateLoc, 1, GL_FALSE, &rotate[0][0]);
+
+	glm::mat4 translate = glm::translate(position);
+	GLint translateLoc = glGetUniformLocation(programID, "translate");
+	glUniformMatrix4fv(translateLoc, 1, GL_FALSE, &translate[0][0]);
+}
+
+void MeGlWindow::keyPressEvent(QKeyEvent* e)
+{
+	switch (e->key())
+	{
+	case Qt::Key::Key_Escape:
+		exit(0);
+		break;
+	case Qt::Key::Key_W:
+		position.y += 0.1f;
+		break;
+	case Qt::Key::Key_S:
+		position.y -= 0.1f;
+		break;
+	case Qt::Key::Key_A:
+		position.x -= 0.1f;
+		break;
+	case Qt::Key::Key_D:
+		position.x += 0.1f;
+		break;
+	case Qt::Key::Key_Q:
+		angle += 5.0f;
+		break;
+	case Qt::Key::Key_E:
+		angle -= 5.0f;
+		break;
+	}
+	repaint();
+}
+
 void MeGlWindow::initializeGL()
 {
 	glewInit();
-	//glClearColor(0, 0, 0, 1);
-	sendContent();
+	glClearColor(0, 0, 0, 1);
 	installShaders();
+	sendContent();
 }
 
 void MeGlWindow::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
+	transformShape();
 	// (void*) number of vertex position floats * 4
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (void*)120);
 }
