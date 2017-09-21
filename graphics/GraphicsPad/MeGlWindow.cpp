@@ -15,7 +15,8 @@ GLuint programID;
 
 glm::vec3 position;
 float angle = 0.0f;
-bool isTranslate = true;
+float scaling = 1.0f;
+bool isBig = false;
 
 string readShader(const char* fileName)
 {
@@ -60,26 +61,19 @@ void sendContent()
 {
 	// Vertex positions on the screen
 	Vertex triPos[] = {
-		glm::vec3(+0.0f, +0.0f, +1.0f),
+		glm::vec3(+0.0f, +1.0f, +1.0f),
 		glm::vec3(+1.0f, +0.0f, +0.0f),
 
-		glm::vec3(-1.0f, +1.0f, +1.0f),
+		glm::vec3(-1.0f, -1.0f, +1.0f),
 		glm::vec3(+0.0f, +1.0f, +0.0f),
 		
-		glm::vec3(-1.0f, -1.0f, +1.0f),
+		glm::vec3(+1.0f, -1.0, +1.0f),
 		glm::vec3(+0.0f, +0.0f, +1.0f),
-
-		glm::vec3(+0.75f, -0.75f, +1.0f),
-		glm::vec3(+1.0f, +0.0f, +1.0f),
-
-		glm::vec3(+0.75f, +0.75f, +1.0f),
-		glm::vec3(+0.0f, +1.0f, +1.0f),
 	};
 
 	// Order of drawing
 	static GLushort indices[] = {
 		0, 1, 2,
-	//	0, 3, 4
 	};
 	
 	GLuint bufferID;
@@ -100,12 +94,12 @@ void sendContent()
 void transformShape()
 {	
 	glm::mat4 rotate = glm::rotate(angle, 0.0f, 0.0f, 1.0f);
-	GLint rotateLoc = glGetUniformLocation(programID, "rotate");
-	glUniformMatrix4fv(rotateLoc, 1, GL_FALSE, &rotate[0][0]);
-
 	glm::mat4 translate = glm::translate(position);
-	GLint translateLoc = glGetUniformLocation(programID, "translate");
-	glUniformMatrix4fv(translateLoc, 1, GL_FALSE, &translate[0][0]);
+	glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(scaling));
+
+	glm::mat4 transform = rotate * translate * scale;
+	GLint uniformLoc = glGetUniformLocation(programID, "transform");
+	glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, &transform[0][0]);
 }
 
 void MeGlWindow::keyPressEvent(QKeyEvent* e)
@@ -116,23 +110,44 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		exit(0);
 		break;
 	case Qt::Key::Key_W:
-		position.y += 0.1f;
+		position.y += 0.05f;
 		break;
 	case Qt::Key::Key_S:
-		position.y -= 0.1f;
+		position.y -= 0.05f;
 		break;
 	case Qt::Key::Key_A:
-		position.x -= 0.1f;
+		position.x -= 0.05f;
 		break;
 	case Qt::Key::Key_D:
-		position.x += 0.1f;
+		position.x += 0.05f;
 		break;
 	case Qt::Key::Key_Q:
-		angle += 5.0f;
+		angle += 3.6f;
 		break;
 	case Qt::Key::Key_E:
-		angle -= 5.0f;
+		angle -= 3.6f;
 		break;
+	case Qt::Key::Key_F:
+		if (isBig)
+		{
+			scaling -= 0.0625f;
+			if (scaling <= 0.0f)
+			{
+				isBig = false;
+			}
+		}
+		else
+		{
+			scaling += 0.0625f;
+			if (scaling >= 2.0f)
+			{
+				isBig = true;
+			}
+		}
+		break;
+	case Qt::Key::Key_R:
+		position.x = position.y = angle = 0.0f;
+		scaling = 1.0f;
 	}
 	repaint();
 }
@@ -151,6 +166,6 @@ void MeGlWindow::paintGL()
 	glViewport(0, 0, width(), height());
 	transformShape();
 	// (void*) number of vertex position floats * 4
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (void*)120);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (void*)72);
 }
 
