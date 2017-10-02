@@ -18,8 +18,11 @@ GLuint programID;
 GLuint indices;
 
 vec3 position;
-float angle = 0.0f;
-float scaling = 1.0f;
+float dist = 70.0f;
+float angle_x = 0.0f;
+float angle_y = -30.0f;
+float angle_z = 0.0f;
+float scale = 1.0f;
 bool isBig = true;
 
 string readShader(const char* fileName)
@@ -96,35 +99,21 @@ void sendContent()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexArrayBufferID);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indexBufferSize(), cube.indices, GL_STATIC_DRAW);
 
-	//GLuint bufferID;
-	//glGenBuffers(1, &bufferID);
-	//glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
-
-	//glBufferData(GL_ARRAY_BUFFER, cube.vertexBufferSize() + cube.indexBufferSize(), cube.vertices, GL_STATIC_DRAW);
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, cube.vertexBufferSize(), cube.vertices);
-	//glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, cube.vertexBufferSize(), cube.indexBufferSize(), cube.indices);
-
-	//glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0);
-	//glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (char*)(sizeof(float) * 3));
-
 	indices = cube.numIndices;
 
 	cube.cleanup();
 }
 
-void transformShape()
-{	
-	mat4 rotate = glm::rotate(angle, 0.0f, 0.0f, 1.0f);
-	mat4 translate = glm::translate(position);
-	mat4 scale = glm::scale(mat4(1.0f), vec3(scaling));
-
-	mat4 transform = rotate * translate * scale;
-	GLint uniformLoc = glGetUniformLocation(programID, "transform");
-	glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, &transform[0][0]);
-}
+//void transformShape()
+//{	
+//	mat4 rotate = glm::rotate(angle, 0.0f, 0.0f, 1.0f);
+//	mat4 translate = glm::translate(position);
+//	mat4 scale = glm::scale(mat4(1.0f), vec3(scaling));
+//
+//	mat4 transform = rotate * translate * scale;
+//	GLint uniformLoc = glGetUniformLocation(programID, "transform");
+//	glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, &transform[0][0]);
+//}
 
 void MeGlWindow::initializeGL()
 {
@@ -139,18 +128,19 @@ void MeGlWindow::paintGL()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
 
-	mat4 modelTransformMatrix = glm::translate(mat4(), vec3(0.0f, 0.0f, -3.0f));
-	mat4 projectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 10.0f);
+	mat4 projectionMatrix = glm::perspective(dist, ((float)width()) / height(), 0.1f, 10.0f);
+	mat4 translationMatrix = glm::translate(mat4(), vec3(0.0f, 0.0f, -3.0f));
+	mat4 rotationMatrix_x = glm::rotate(mat4(), angle_x, vec3(1.0f, 0.0f, 0.0f));
+	mat4 rotationMatrix_y = glm::rotate(mat4(), angle_y, vec3(0.0f, 1.0f, 0.0f));
+	mat4 rotationMatrix_z = glm::rotate(mat4(), angle_z, vec3(0.0f, 0.0f, 1.0f));
+	mat4 scaleMatrix = glm::scale(mat4(1.0f), vec3(scale));
 
-	GLint modelTransMatUniformLoc = glGetUniformLocation(programID, "modelTransMat");
-	GLint projectionMatUniformLoc = glGetUniformLocation(programID, "projectionMat");
+	mat4 transform = projectionMatrix * translationMatrix * 
+		rotationMatrix_x * rotationMatrix_y * rotationMatrix_z * scaleMatrix;
 
-	glUniformMatrix4fv(modelTransMatUniformLoc, 1, GL_FALSE, &modelTransformMatrix[0][0]);
-	glUniformMatrix4fv(projectionMatUniformLoc, 1, GL_FALSE, &projectionMatrix[0][0]);
+	GLint transformUniLoc = glGetUniformLocation(programID, "transform");
+	glUniformMatrix4fv(transformUniLoc, 1, GL_FALSE, &transform[0][0]);
 
-	transformShape();
-
-	// (void*) number of vertex position floats * 4
 	glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_SHORT, 0);
 }
 
@@ -162,10 +152,18 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		exit(0);
 		break;
 	case Qt::Key::Key_W:
-		position.y += 0.05f;
+		//position.y += 0.05f;
+		if (dist <= 100.0f)
+		{
+			dist += 2.0f;
+		}
 		break;
 	case Qt::Key::Key_S:
-		position.y -= 0.05f;
+		//position.y -= 0.05f;
+		if (dist >= 40.0f)
+		{
+			dist -= 2.0f;
+		}
 		break;
 	case Qt::Key::Key_A:
 		position.x -= 0.05f;
@@ -173,33 +171,41 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_D:
 		position.x += 0.05f;
 		break;
-	case Qt::Key::Key_Q:
-		angle += 3.6f;
+	case Qt::Key::Key_Up:
+		angle_x += -3.6f;
 		break;
-	case Qt::Key::Key_E:
-		angle -= 3.6f;
+	case Qt::Key::Key_Down:
+		angle_x += 3.6f;
+		break;
+	case Qt::Key::Key_Left:
+		angle_y += -3.6f;
+		break;
+	case Qt::Key::Key_Right:
+		angle_y += 3.6f;
 		break;
 	case Qt::Key::Key_F:
 		if (isBig)
 		{
-			scaling -= 0.0625f;
-			if (scaling <= 0.0f)
+			scale -= 0.0625f;
+			if (scale <= 0.0f)
 			{
 				isBig = false;
 			}
 		}
 		else
 		{
-			scaling += 0.0625f;
-			if (scaling >= 2.0f)
+			scale += 0.0625f;
+			if (scale >= 2.0f)
 			{
 				isBig = true;
 			}
 		}
 		break;
 	case Qt::Key::Key_R:
-		position.x = position.y = angle = 0.0f;
-		scaling = 1.0f;
+		dist = 70.0f;
+		position.x = position.y = angle_x = angle_z = 0.0f;
+		angle_y = -30.0f;
+		scale = 1.0f;
 	}
 	repaint();
 }
