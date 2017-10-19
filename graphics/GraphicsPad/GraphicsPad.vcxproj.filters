@@ -5,12 +5,15 @@
     <ClCompile Include="MeGlWindow.cpp" />
     <ClCompile Include="MeShaderCode.cpp" />
     <ClCompile Include="ShapeGenerator.cpp" />
+    <ClCompile Include="Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MeGlWindow.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="ShapeData.h" />
     <ClInclude Include="ShapeGenerator.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="TeapotData.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VertexShader.glsl" />

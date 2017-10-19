@@ -6,12 +6,18 @@
 
 class MeGlWindow : public QGLWidget
 {
+	void sendContent();
+	std::string readShader(const char* fileName);
+	void installShaders();
 protected:
 	void initializeGL();
 	void paintGL();
 	void keyPressEvent(QKeyEvent* e);
+	void mouseMoveEvent(QMouseEvent*);
 
 public:
+	~MeGlWindow();
+
 };
 
 #endif
