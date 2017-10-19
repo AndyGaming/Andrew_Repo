@@ -14,58 +14,43 @@ using glm::vec3;
 using glm::mat4;
 
 const uint NUM_VERTICES_PER_TRI = 3;
-const uint NUM_FLOATS_PER_VERTICE = 6;
+const uint NUM_FLOATS_PER_VERTICE = 9;
 const uint VERTEX_BYTE_SIZE = NUM_FLOATS_PER_VERTICE * sizeof(float);
+
+Camera camera;
 GLuint programID;
 GLuint cubeIndices;
 GLuint arrowIndices;
-Camera camera;
+GLuint planeIndices;
 GLuint fullTransformUniLoc;
 GLuint bufferID;
-//GLuint indexBufferID;
 GLuint cubeVertexArrayObjectID;
 GLuint arrowVertexArrayObjectID;
+GLuint planeVertexArrayObjectID;
 GLuint cubeIndexByteOffset;
 GLuint arrowIndexByteOffset;
+GLuint planeIndexByteOffset;
 
-vec3 position;
-float dist = 70.0f;
-float angle_x = 0.0f;
-float angle_y = -30.0f;
-float angle_z = 0.0f;
-float scale = 1.0f;
-bool isBig = true;
+//vec3 position;
+//float dist = 70.0f;
+//float angle_x = 0.0f;
+//float angle_y = -30.0f;
+//float angle_z = 0.0f;
+//float scale = 1.0f;
+//bool isBig = true;
 
 void MeGlWindow::sendContent()
 {
-	/*ShapeData cube = ShapeGenerator::makeCube();
-	
-	GLuint vertexBufferID;
-	glGenBuffers(1, &vertexBufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, cube.vertexBufferSize(), cube.vertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (char*)(sizeof(float) * 3));
-
-	GLuint indexArrayBufferID;
-	glGenBuffers(1, &indexArrayBufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexArrayBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indexBufferSize(), cube.indices, GL_STATIC_DRAW);
-
-	indices = cube.numIndices;
-
-	cube.cleanup();*/
-
 	ShapeData cube = ShapeGenerator::makeCube();
 	ShapeData arrow = ShapeGenerator::makeArrow();
+	ShapeData plane = ShapeGenerator::makePlane();
 
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	glBufferData(GL_ARRAY_BUFFER, 
 		cube.vertexBufferSize() + cube.indexBufferSize()
-		+ arrow.vertexBufferSize() + arrow.indexBufferSize(), 
+		+ arrow.vertexBufferSize() + arrow.indexBufferSize()
+		+ plane.vertexBufferSize() + plane.indexBufferSize(),
 		0, GL_STATIC_DRAW);
 	GLsizeiptr currentOffset = 0;
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.vertexBufferSize(), cube.vertices);
@@ -75,35 +60,58 @@ void MeGlWindow::sendContent()
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.vertexBufferSize(), arrow.vertices);
 	currentOffset += arrow.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.indexBufferSize(), arrow.indices);
+	currentOffset += arrow.indexBufferSize();
+	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.vertexBufferSize(), plane.vertices);
+	currentOffset += plane.vertexBufferSize();
+	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.indexBufferSize(), plane.indices);
 
 	cubeIndices = cube.numIndices;
 	arrowIndices = arrow.numIndices;
+	planeIndices = plane.numIndices;
 
 	glGenVertexArrays(1, &cubeVertexArrayObjectID);
 	glGenVertexArrays(1, &arrowVertexArrayObjectID);
+	glGenVertexArrays(1, &planeVertexArrayObjectID);
 
 	glBindVertexArray(cubeVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, 0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sizeof(float) * 3));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sizeof(float) * 6));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	glBindVertexArray(arrowVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	GLuint arrowByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)arrowByteOffset);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(arrowByteOffset + sizeof(float) * 3));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(arrowByteOffset + sizeof(float) * 6));
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
+
+	glBindVertexArray(planeVertexArrayObjectID);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+	GLuint planeByteOffset = arrowByteOffset + arrow.vertexBufferSize() + arrow.indexBufferSize();
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)planeByteOffset);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 3));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 6));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	cubeIndexByteOffset = cube.vertexBufferSize();
 	arrowIndexByteOffset = arrowByteOffset + arrow.vertexBufferSize();
+	planeIndexByteOffset = planeByteOffset + plane.vertexBufferSize();
 
 	cube.cleanup();
 	arrow.cleanup();
+	plane.cleanup();
 }
 
 void MeGlWindow::paintGL()
@@ -111,51 +119,37 @@ void MeGlWindow::paintGL()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
 
-	//GLint fullTransformUniLoc = glGetUniformLocation(programID, "transform");
-
-	//mat4 fullTransform;
-	//mat4 projectionMatrix = glm::perspective(dist, ((float)width()) / height(), 0.1f, 10.0f);
-
-	//// Cube 1
-	//mat4 translationMatrix = glm::translate(mat4(), vec3(-1.0f, 0.0f, -3.0f));
-	//mat4 rotationMatrix_x = glm::rotate(mat4(), angle_x, vec3(1.0f, 0.0f, 0.0f));
-	//mat4 rotationMatrix_y = glm::rotate(mat4(), angle_y, vec3(0.0f, 1.0f, 0.0f));
-	//mat4 rotationMatrix_z = glm::rotate(mat4(), angle_z, vec3(0.0f, 0.0f, 1.0f));
-	//mat4 scaleMatrix = glm::scale(mat4(1.0f), vec3(scale));
-
-	//fullTransform = projectionMatrix * /*camera.getWorldToViewMatrix() **/ translationMatrix * 
-	//	rotationMatrix_x * rotationMatrix_y * rotationMatrix_z * scaleMatrix;
-
-	//glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransform[0][0]);
-	//glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_SHORT, 0);
-
 	mat4 fullTransformMatrix;
-	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 10.0f);
+	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
+
+	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
+	vec3 ambientLight(0.1f, 0.1f, 0.1f);
+	glUniform3fv(ambientLightUniLoc, 1, &ambientLight[0]);
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
 	mat4 cube1ModelToWorldMatrix =
-		glm::translate(vec3(-2.0f, 0.0f, -3.0f)) *
-		glm::rotate(36.0f, vec3(1.0f, 0.0f, 0.0f));
+		glm::translate(vec3(-2.0f, 1.0f, 0.0f))
+		* glm::rotate(60.0f, vec3(1.0f, 0.0f, 1.0f));
 	fullTransformMatrix = worldToProjectionMatrix * cube1ModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
-	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
-
-	mat4 cube2ModelToWorldMatrix =
-		glm::translate(vec3(2.0f, 0.0f, -3.75f)) *
-		glm::rotate(126.0f, vec3(0.0f, 1.0f, 0.0f));
-	fullTransformMatrix = worldToProjectionMatrix * cube2ModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Arrow
 	glBindVertexArray(arrowVertexArrayObjectID);
-	mat4 arrowModelToWorldMatrix = glm::translate(0.0f, 0.0f, -3.0f);
+	mat4 arrowModelToWorldMatrix = glm::translate(1.5f, 0.0f, -1.0f);
 	fullTransformMatrix = worldToProjectionMatrix * arrowModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, arrowIndices, GL_UNSIGNED_SHORT, (void*)arrowIndexByteOffset);
+
+	// Plane
+	glBindVertexArray(planeVertexArrayObjectID);
+	mat4 planeModelToWorldMatrix = glm::mat4();
+	fullTransformMatrix = worldToProjectionMatrix * planeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
@@ -304,8 +298,10 @@ void MeGlWindow::initializeGL()
 	setMouseTracking(false);
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
-	installShaders();
+	glEnable(GL_CULL_FACE);
 	sendContent();
+	installShaders();
+	fullTransformUniLoc = glGetUniformLocation(programID, "transform");
 }
 
 MeGlWindow::~MeGlWindow()
@@ -313,6 +309,7 @@ MeGlWindow::~MeGlWindow()
 	glDeleteBuffers(1, &bufferID);
 	glDeleteVertexArrays(1, &cubeVertexArrayObjectID);
 	glDeleteVertexArrays(1, &arrowVertexArrayObjectID);
+	glDeleteVertexArrays(1, &planeVertexArrayObjectID);
 	glUseProgram(0);
 	glDeleteProgram(programID);
 }
