@@ -1,9 +1,15 @@
 #version 430
 
 out vec4 color;
-in vec3 tempColor;
+//in vec3 finalColor;
+in vec3 finalNormal;
+in vec3 finalPosition;
+
+uniform vec3 lightPosition;
 
 void main()
 {
-	color = vec4(tempColor, 1.0);
+	vec3 lightVector = normalize(lightPosition - finalPosition);
+	float brightness = dot(lightVector, finalNormal);
+	color = vec4(brightness, brightness, brightness, 1.0);
 }

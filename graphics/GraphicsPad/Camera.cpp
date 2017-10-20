@@ -4,8 +4,8 @@
 const float Camera::MOVEMENT_SPEED = 0.1f;
 
 Camera::Camera() :
-	viewDirection(0.663740635f, -0.492421985f, 0.562995136f),
-	position(-3.11094999f, 2.23070025f, -2.86016989f),
+	viewDirection(0.00246714987f, -0.688352168f, 0.725368142f),
+	position(-0.332384914f, 4.18636227f, -6.54531479f),
 	UP(0.0f, 1.0f, 0.0f)
 {
 }
@@ -61,4 +61,10 @@ void Camera::moveUp()
 void Camera::moveDown()
 {
 	position += -MOVEMENT_SPEED * UP;
+}
+
+void Camera::resetCamera()
+{
+	position = glm::vec3(-0.332384914f, 4.18636227f, -6.54531479f);
+	viewDirection = glm::vec3(0.00246714987f, -0.688352168f, 0.725368142f);
 }

@@ -20,6 +20,7 @@ public:
 	void strafeRight();
 	void moveUp();
 	void moveDown();
+	void resetCamera();
 	glm::vec3 getPosition() const { return position; }
 };
 
