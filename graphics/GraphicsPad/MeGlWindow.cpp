@@ -157,12 +157,12 @@ void MeGlWindow::paintGL()
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
-	vec4 ambientLight(0.1f, 0.1f, 0.1f, 1.0f);
+	vec4 ambientLight(0.0f, 0.0f, 0.1f, 1.0f);
 	glUniform4fv(ambientLightUniLoc, 1, &ambientLight[0]);
 
 	// Diffuse light
 	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
-	vec3 lightPositionWorld(-3.0f, 2.0f, -3.0f);
+	vec3 lightPositionWorld(-3.0f, 1.5f, -3.0f);
 	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Specular light
@@ -182,7 +182,7 @@ void MeGlWindow::paintGL()
 
 	// Arrow
 	glBindVertexArray(arrowVertexArrayObjectID);
-	mat4 arrowModelToWorldMatrix = glm::translate(0.0f, 1.0f, -3.0f);
+	mat4 arrowModelToWorldMatrix = glm::translate(0.0f, 0.5f, -3.0f);
 	modelToProjectionMat = worldToProjectionMatrix * arrowModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &arrowModelToWorldMatrix[0][0]);
@@ -207,6 +207,7 @@ void MeGlWindow::paintGL()
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
 {
+	setFocus();
 	camera.mouseUpdate(glm::vec2(e->x(), e->y()));
 	repaint();
 }
