@@ -21,6 +21,7 @@ const uint VERTEX_BYTE_SIZE = NUM_FLOATS_PER_VERTICE * sizeof(float);
 Camera camera;
 GLuint programID;
 GLuint bufferID;
+GLuint textureID;
 GLuint fullTransformUniLoc;
 
 GLuint cubeIndices;
@@ -103,22 +104,26 @@ void MeGlWindow::sendContent()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	GLuint arrowByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)arrowByteOffset);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(arrowByteOffset + sizeof(float) * 3));
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(arrowByteOffset + sizeof(float) * 6));
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(arrowByteOffset + sizeof(float) * 9));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	glBindVertexArray(sphereVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	GLuint sphereByteOffset = arrowByteOffset + arrow.vertexBufferSize() + arrow.indexBufferSize();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)sphereByteOffset);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sphereByteOffset + sizeof(float) * 3));
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sphereByteOffset + sizeof(float) * 6));
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sphereByteOffset + sizeof(float) * 9));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	glBindVertexArray(planeVertexArrayObjectID);
@@ -157,7 +162,7 @@ void MeGlWindow::paintGL()
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
-	vec4 ambientLight(0.0f, 0.0f, 0.1f, 1.0f);
+	vec4 ambientLight(0.1f, 0.1f, 0.1f, 1.0f);
 	glUniform4fv(ambientLightUniLoc, 1, &ambientLight[0]);
 
 	// Diffuse light
@@ -211,7 +216,6 @@ void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
 	camera.mouseUpdate(glm::vec2(e->x(), e->y()));
 	repaint();
 }
-
 
 //void MeGlWindow::keyPressEvent(QKeyEvent* e)
 //{
@@ -350,6 +354,26 @@ void MeGlWindow::installShaders()
 	glUseProgram(programID);
 }
 
+void MeGlWindow::initTextures()
+{
+	glEnable(GL_TEXTURE_2D);
+
+	//int width = 64, height = 64;
+	QImage tex_1 = QGLWidget::convertToGLFormat(QImage("Splatter.png", "png"));
+
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // GL_NEAREST
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(
+		GL_TEXTURE_2D, 0, GL_RGBA, tex_1.width(), tex_1.height(),
+		0, GL_RGBA, GL_UNSIGNED_BYTE, tex_1.bits());
+	glUniform1i(glGetUniformLocation(programID, "texture_1"), GL_TEXTURE0);
+
+	glDisable(GL_TEXTURE_2D);
+}
+
 void MeGlWindow::initializeGL()
 {
 	setMouseTracking(false);
@@ -358,6 +382,7 @@ void MeGlWindow::initializeGL()
 	glEnable(GL_CULL_FACE);
 	sendContent();
 	installShaders();
+	initTextures();
 	fullTransformUniLoc = glGetUniformLocation(programID, "modelToProjectionMat");
 }
 

@@ -9,6 +9,7 @@ class MeGlWindow : public QGLWidget
 	void sendContent();
 	std::string readShader(const char* fileName);
 	void installShaders();
+	void initTextures();
 protected:
 	void initializeGL();
 	void paintGL();

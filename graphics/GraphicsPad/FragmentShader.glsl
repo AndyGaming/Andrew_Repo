@@ -1,12 +1,15 @@
 #version 430
 
 out vec4 finalColor;
+
+in vec2 texCoord;
 in vec3 normalWorld;
 in vec3 vertexPositionWorld;
 
 uniform vec3 lightPositionWorld;
 uniform vec3 cameraPositionWorld;
 uniform vec4 ambientLight;
+uniform sampler2D texture_1;
 
 void main()
 {
@@ -23,9 +26,11 @@ void main()
 	vec4 specularLight = clamp(vec4(specular, 0, 0, 1.0), 0, 1);
 
 	// Attentuation
-	float lightAttenuation = 0.1;
+	float lightAttenuation = 0.05;
 	float lightDistance = length(lightPositionWorld - vertexPositionWorld);
 	float attenuation = 1.0 / (1.0 + lightAttenuation * pow(lightDistance, 2));
 	
-	finalColor = ambientLight + attenuation * (diffuseLight + specularLight);
+	vec4 lighting = ambientLight + attenuation * (diffuseLight + specularLight);
+	vec4 texColor = texture(texture_1, texCoord);
+	finalColor = texColor * lighting;
 }
