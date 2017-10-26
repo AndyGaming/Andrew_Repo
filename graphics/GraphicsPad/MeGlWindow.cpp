@@ -147,10 +147,12 @@ void MeGlWindow::paintGL()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
 	
-	mat4 fullTransformMatrix;
+	mat4 modelToProjectionMat;
 	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
+
+	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMat");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -158,38 +160,42 @@ void MeGlWindow::paintGL()
 	glUniform3fv(ambientLightUniLoc, 1, &ambientLight[0]);
 
 	// Diffuse light
-	GLuint lightPositionUniLoc = glGetUniformLocation(programID, "lightPosition");
-	vec3 lightPosition(2.0f, 4.0f, -2.0f);
-	glUniform3fv(lightPositionUniLoc, 1, &lightPosition[0]);
+	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
+	vec3 lightPositionWorld(2.0f, 4.0f, -2.0f);
+	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
 	mat4 cubeModelToWorldMatrix =
 		glm::translate(vec3(-2.0f, 1.0f, -1.0f))
 		* glm::rotate(60.0f, vec3(0.0f, 1.0f, 0.0f));
-	fullTransformMatrix = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Arrow
 	glBindVertexArray(arrowVertexArrayObjectID);
 	mat4 arrowModelToWorldMatrix = glm::translate(0.0f, 1.0f, -3.0f);
-	fullTransformMatrix = worldToProjectionMatrix * arrowModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+	modelToProjectionMat = worldToProjectionMatrix * arrowModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &arrowModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, arrowIndices, GL_UNSIGNED_SHORT, (void*)arrowIndexByteOffset);
 
 	// Sphere
 	glBindVertexArray(sphereVertexArrayObjectID);
 	mat4 sphereModelToWorldMatrix = glm::translate(2.0f, 1.0f, -2.0f);
-	fullTransformMatrix = worldToProjectionMatrix * sphereModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+	modelToProjectionMat = worldToProjectionMatrix * sphereModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &sphereModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, sphereIndices, GL_UNSIGNED_SHORT, (void*)sphereIndexByteOffset);
 
 	// Plane
 	glBindVertexArray(planeVertexArrayObjectID);
 	mat4 planeModelToWorldMatrix = glm::mat4();
-	fullTransformMatrix = worldToProjectionMatrix * planeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &fullTransformMatrix[0][0]);
+	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
@@ -345,7 +351,7 @@ void MeGlWindow::initializeGL()
 	glEnable(GL_CULL_FACE);
 	sendContent();
 	installShaders();
-	fullTransformUniLoc = glGetUniformLocation(programID, "transform");
+	fullTransformUniLoc = glGetUniformLocation(programID, "modelToProjectionMat");
 }
 
 MeGlWindow::~MeGlWindow()
@@ -354,6 +360,7 @@ MeGlWindow::~MeGlWindow()
 	glDeleteVertexArrays(1, &cubeVertexArrayObjectID);
 	glDeleteVertexArrays(1, &arrowVertexArrayObjectID);
 	glDeleteVertexArrays(1, &planeVertexArrayObjectID);
+	glDeleteVertexArrays(1, &sphereVertexArrayObjectID);
 	glUseProgram(0);
 	glDeleteProgram(programID);
 }

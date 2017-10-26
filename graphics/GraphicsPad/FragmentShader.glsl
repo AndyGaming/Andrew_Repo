@@ -1,15 +1,14 @@
 #version 430
 
 out vec4 color;
-//in vec3 finalColor;
-in vec3 finalNormal;
-in vec3 finalPosition;
+in vec3 normalWorld;
+in vec3 vertexPositionWorld;
 
-uniform vec3 lightPosition;
+uniform vec3 lightPositionWorld;
 
 void main()
 {
-	vec3 lightVector = normalize(lightPosition - finalPosition);
-	float brightness = dot(lightVector, finalNormal);
+	vec3 lightVectorWorld = normalize(lightPositionWorld - vertexPositionWorld);
+	float brightness = dot(lightVectorWorld, normalize(normalWorld));
 	color = vec4(brightness, brightness, brightness, 1.0);
 }
