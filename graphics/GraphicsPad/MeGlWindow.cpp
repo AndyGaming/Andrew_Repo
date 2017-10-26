@@ -162,13 +162,18 @@ void MeGlWindow::paintGL()
 
 	// Diffuse light
 	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
-	vec3 lightPositionWorld(0.0f, 2.0f, -2.0f);
+	vec3 lightPositionWorld(-3.0f, 2.0f, -3.0f);
 	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
+
+	// Specular light
+	GLuint cameraPositionWorldUniLoc = glGetUniformLocation(programID, "cameraPositionWorld");
+	vec3 cameraPosition = camera.getPosition();
+	glUniform3fv(cameraPositionWorldUniLoc, 1, &cameraPosition[0]);
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
 	mat4 cubeModelToWorldMatrix =
-		glm::translate(vec3(-2.0f, 1.0f, -1.0f))
+		glm::translate(vec3(-2.0f, 1.0f, 1.0f))
 		* glm::rotate(60.0f, vec3(0.0f, 1.0f, 0.0f));
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
@@ -185,7 +190,7 @@ void MeGlWindow::paintGL()
 
 	// Sphere
 	glBindVertexArray(sphereVertexArrayObjectID);
-	mat4 sphereModelToWorldMatrix = glm::translate(2.0f, 1.0f, -2.0f);
+	mat4 sphereModelToWorldMatrix = glm::translate(2.0f, 1.0f, -1.0f);
 	modelToProjectionMat = worldToProjectionMatrix * sphereModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &sphereModelToWorldMatrix[0][0]);
