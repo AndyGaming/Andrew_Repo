@@ -40,13 +40,9 @@ GLuint planeIndices;
 GLuint planeVertexArrayObjectID;
 GLuint planeIndexByteOffset;
 
-//vec3 position;
-//float dist = 70.0f;
-//float angle_x = 0.0f;
-//float angle_y = -30.0f;
-//float angle_z = 0.0f;
-//float scale = 1.0f;
-//bool isBig = true;
+float angle_x = 0.0f;
+float angle_y = -30.0f;
+float angle_z = 0.0f;
 
 void MeGlWindow::sendContent()
 {
@@ -167,7 +163,8 @@ void MeGlWindow::paintGL()
 
 	// Diffuse light
 	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
-	vec3 lightPositionWorld(-3.0f, 1.5f, -3.0f);
+	vec3 lightPositionWorld(-2.0f, 4.0f, -3.0f);
+	//vec3 lightPositionWorld(-3.0f, 1.5f, -3.0f);
 	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Specular light
@@ -177,9 +174,12 @@ void MeGlWindow::paintGL()
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	mat4 cubeModelToWorldMatrix =
-		glm::translate(vec3(-2.0f, 1.0f, 1.0f))
-		* glm::rotate(60.0f, vec3(0.0f, 1.0f, 0.0f));
+	mat4 cubeTranslateMatrix = glm::translate(vec3(0.0f, 1.0f, -3.0f));
+	mat4 cubeRotaionMatrix_x = glm::rotate(mat4(), angle_x, vec3(1.0f, 0.0f, 0.0f));
+	mat4 cubeRotaionMatrix_y = glm::rotate(mat4(), angle_y, vec3(0.0f, 1.0f, 0.0f));
+	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
+	//	glm::translate(vec3(-2.0f, 1.0f, 1.0f))
+	//	* glm::rotate(60.0f, vec3(0.0f, 1.0f, 0.0f));
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
@@ -191,7 +191,7 @@ void MeGlWindow::paintGL()
 	modelToProjectionMat = worldToProjectionMatrix * arrowModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &arrowModelToWorldMatrix[0][0]);
-	glDrawElements(GL_TRIANGLES, arrowIndices, GL_UNSIGNED_SHORT, (void*)arrowIndexByteOffset);
+	//glDrawElements(GL_TRIANGLES, arrowIndices, GL_UNSIGNED_SHORT, (void*)arrowIndexByteOffset);
 
 	// Sphere
 	glBindVertexArray(sphereVertexArrayObjectID);
@@ -199,7 +199,7 @@ void MeGlWindow::paintGL()
 	modelToProjectionMat = worldToProjectionMatrix * sphereModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &sphereModelToWorldMatrix[0][0]);
-	glDrawElements(GL_TRIANGLES, sphereIndices, GL_UNSIGNED_SHORT, (void*)sphereIndexByteOffset);
+	//glDrawElements(GL_TRIANGLES, sphereIndices, GL_UNSIGNED_SHORT, (void*)sphereIndexByteOffset);
 
 	// Plane
 	glBindVertexArray(planeVertexArrayObjectID);
@@ -207,7 +207,7 @@ void MeGlWindow::paintGL()
 	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
-	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
+	//glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
@@ -216,72 +216,6 @@ void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
 	camera.mouseUpdate(glm::vec2(e->x(), e->y()));
 	repaint();
 }
-
-//void MeGlWindow::keyPressEvent(QKeyEvent* e)
-//{
-//	switch (e->key())
-//	{
-//	case Qt::Key::Key_Escape:
-//		exit(0);
-//		break;
-//	case Qt::Key::Key_S:
-//		//position.y += 0.05f;
-//		if (dist <= 100.0f)
-//		{
-//			dist += 2.0f;
-//		}
-//		break;
-//	case Qt::Key::Key_W:
-//		//position.y -= 0.05f;
-//		if (dist >= 40.0f)
-//		{
-//			dist += -2.0f;
-//		}
-//		break;
-//	case Qt::Key::Key_A:
-//		position.x += -0.05f;
-//		break;
-//	case Qt::Key::Key_D:
-//		position.x += 0.05f;
-//		break;
-//	case Qt::Key::Key_Up:
-//		angle_x += -3.6f;
-//		break;
-//	case Qt::Key::Key_Down:
-//		angle_x += 3.6f;
-//		break;
-//	case Qt::Key::Key_Left:
-//		angle_y += -3.6f;
-//		break;
-//	case Qt::Key::Key_Right:
-//		angle_y += 3.6f;
-//		break;
-//	case Qt::Key::Key_F:
-//		if (isBig)
-//		{
-//			scale -= 0.0625f;
-//			if (scale <= 0.0f)
-//			{
-//				isBig = false;
-//			}
-//		}
-//		else
-//		{
-//			scale += 0.0625f;
-//			if (scale >= 2.0f)
-//			{
-//				isBig = true;
-//			}
-//		}
-//		break;
-//	case Qt::Key::Key_R:
-//		dist = 70.0f;
-//		position.x = position.y = angle_x = angle_z = 0.0f;
-//		angle_y = -30.0f;
-//		scale = 1.0f;
-//	}
-//	repaint();
-//}
 
 void MeGlWindow::keyPressEvent(QKeyEvent* e)
 {
@@ -308,8 +242,22 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_E:
 		camera.moveDown();
 		break;
+	case Qt::Key::Key_Up:
+		angle_x += 3.6f;
+		break;
+	case Qt::Key::Key_Down:
+		angle_x += -3.6f;
+		break;
+	case Qt::Key::Key_Left:
+		angle_y += -3.6f;
+		break;
+	case Qt::Key::Key_Right:
+		angle_y += 3.6f;
+		break;
 	case Qt::Key::Key_R:
 		camera.resetCamera();
+		angle_x = 0.0f;
+		angle_y = -30.0f;
 		break;
 	}
 	repaint();
