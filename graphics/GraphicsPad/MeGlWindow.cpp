@@ -20,45 +20,44 @@ const uint VERTEX_BYTE_SIZE = NUM_FLOATS_PER_VERTICE * sizeof(float);
 
 Camera camera;
 GLuint programID;
+GLuint passThroughProgramID;
 GLuint bufferID;
 GLuint textureID;
 GLuint fullTransformUniLoc;
+GLuint lightbulbTransformUniLoc;
 
 GLuint cubeIndices;
 GLuint cubeVertexArrayObjectID;
 GLuint cubeIndexByteOffset;
 
+GLuint lightbulbIndices;
+GLuint lightbulbVertexArrayObjectID;
+GLuint lightbulbIndexByteOffset;
+
 //GLuint arrowIndices;
 //GLuint arrowVertexArrayObjectID;
 //GLuint arrowIndexByteOffset;
-
-//GLuint sphereIndices;
-//GLuint sphereVertexArrayObjectID;
-//GLuint sphereIndexByteOffset;
 
 GLuint planeIndices;
 GLuint planeVertexArrayObjectID;
 GLuint planeIndexByteOffset;
 
-float angle_x = 0.0f;
-float angle_y = -30.0f;
-float angle_z = 0.0f;
-float lightPos_x = -2.0f;
-float lightPos_y = 4.0f;
+vec3 cubeAngle(0.0f, -30.0f, 0.0f);
+vec3 lightPos(-2.0f, 4.0f, -3.5f);
 
 void MeGlWindow::sendContent()
 {
 	ShapeData cube = ShapeGenerator::makeCube();
+	ShapeData lightbulb = ShapeGenerator::makeCube();
 	//ShapeData arrow = ShapeGenerator::makeArrow();
-	//ShapeData sphere = ShapeGenerator::makeSphere();
 	ShapeData plane = ShapeGenerator::makePlane();
 
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	glBufferData(GL_ARRAY_BUFFER, 
 		cube.vertexBufferSize() + cube.indexBufferSize()
+		+ lightbulb.vertexBufferSize() + lightbulb.indexBufferSize()
 		//+ arrow.vertexBufferSize() + arrow.indexBufferSize()
-		//+ sphere.vertexBufferSize() + sphere.indexBufferSize()
 		+ plane.vertexBufferSize() + plane.indexBufferSize(),
 		0, GL_STATIC_DRAW);
 	GLsizeiptr currentOffset = 0;
@@ -66,26 +65,25 @@ void MeGlWindow::sendContent()
 	currentOffset += cube.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.indexBufferSize(), cube.indices);
 	currentOffset += cube.indexBufferSize();
+	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.vertexBufferSize(), lightbulb.vertices);
+	currentOffset += lightbulb.vertexBufferSize();
+	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.indexBufferSize(), lightbulb.indices);
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.vertexBufferSize(), arrow.vertices);
 	//currentOffset += arrow.vertexBufferSize();
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.indexBufferSize(), arrow.indices);
-	//currentOffset += arrow.indexBufferSize();
-	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, sphere.vertexBufferSize(), sphere.vertices);
-	//currentOffset += sphere.vertexBufferSize();
-	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, sphere.indexBufferSize(), sphere.indices);
-	//currentOffset += sphere.indexBufferSize();
+	currentOffset += lightbulb.indexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.vertexBufferSize(), plane.vertices);
 	currentOffset += plane.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.indexBufferSize(), plane.indices);
 
 	cubeIndices = cube.numIndices;
+	lightbulbIndices = lightbulb.numIndices;
 	//arrowIndices = arrow.numIndices;
-	//sphereIndices = sphere.numIndices;
 	planeIndices = plane.numIndices;
 
 	glGenVertexArrays(1, &cubeVertexArrayObjectID);
+	glGenVertexArrays(1, &lightbulbVertexArrayObjectID);
 	//glGenVertexArrays(1, &arrowVertexArrayObjectID);
-	//glGenVertexArrays(1, &sphereVertexArrayObjectID);
 	glGenVertexArrays(1, &planeVertexArrayObjectID);
 
 	glBindVertexArray(cubeVertexArrayObjectID);
@@ -102,6 +100,16 @@ void MeGlWindow::sendContent()
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sizeof(float) * 11));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
+	/*glBindVertexArray(lightbulbVertexArrayObjectID);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+	GLuint lightbulbByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)lightbulbByteOffset);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 3));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 6));
+	*/
 	glBindVertexArray(planeVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -114,13 +122,13 @@ void MeGlWindow::sendContent()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	cubeIndexByteOffset = cube.vertexBufferSize();
+	//lightbulbIndexByteOffset = lightbulb.vertexBufferSize();
 	//arrowIndexByteOffset = arrowByteOffset + arrow.vertexBufferSize();
-	//sphereIndexByteOffset = sphereByteOffset + sphere.vertexBufferSize();
 	planeIndexByteOffset = planeByteOffset + plane.vertexBufferSize();
 
 	cube.cleanup();
+	lightbulb.cleanup();
 	//arrow.cleanup();
-	//sphere.cleanup();
 	plane.cleanup();
 }
 
@@ -133,6 +141,8 @@ void MeGlWindow::paintGL()
 	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
+	
+	glUseProgram(programID);
 
 	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMat");
 
@@ -143,7 +153,7 @@ void MeGlWindow::paintGL()
 
 	// Diffuse light
 	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
-	vec3 lightPositionWorld(lightPos_x, lightPos_y, -3.5f);
+	vec3 lightPositionWorld(lightPos);
 	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Specular light
@@ -153,40 +163,42 @@ void MeGlWindow::paintGL()
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	mat4 cubeTranslateMatrix = glm::translate(vec3(0.0f, 1.0f, -3.0f));
-	mat4 cubeRotaionMatrix_x = glm::rotate(mat4(), angle_x, vec3(1.0f, 0.0f, 0.0f));
-	mat4 cubeRotaionMatrix_y = glm::rotate(mat4(), angle_y, vec3(0.0f, 1.0f, 0.0f));
+	mat4 cubeTranslateMatrix = glm::translate(0.0f, 1.0f, -3.0f);
+	mat4 cubeRotaionMatrix_x = glm::rotate(cubeAngle.x, vec3(1.0f, 0.0f, 0.0f));
+	mat4 cubeRotaionMatrix_y = glm::rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
 	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
-	//	glm::translate(vec3(-2.0f, 1.0f, 1.0f))
-	//	* glm::rotate(60.0f, vec3(0.0f, 1.0f, 0.0f));
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
-	// Arrow
-	//glBindVertexArray(arrowVertexArrayObjectID);
-	//mat4 arrowModelToWorldMatrix = glm::translate(0.0f, 0.5f, -3.0f);
-	//modelToProjectionMat = worldToProjectionMatrix * arrowModelToWorldMatrix;
-	//glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	//glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &arrowModelToWorldMatrix[0][0]);
-	//glDrawElements(GL_TRIANGLES, arrowIndices, GL_UNSIGNED_SHORT, (void*)arrowIndexByteOffset);
-
-	// Sphere
-	//glBindVertexArray(sphereVertexArrayObjectID);
-	//mat4 sphereModelToWorldMatrix = glm::translate(2.0f, 1.0f, -1.0f);
-	//modelToProjectionMat = worldToProjectionMatrix * sphereModelToWorldMatrix;
-	//glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	//glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &sphereModelToWorldMatrix[0][0]);
-	//glDrawElements(GL_TRIANGLES, sphereIndices, GL_UNSIGNED_SHORT, (void*)sphereIndexByteOffset);
+	//glUseProgram(passThroughProgramID);
+	glBindVertexArray(cubeVertexArrayObjectID);
+	cubeTranslateMatrix = glm::translate(lightPos);
+	mat4 cubeScaleMatrix = glm::scale(vec3(0.2f, 0.2f, 0.2f));
+	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
+	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	//glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
+	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
+	//glUseProgram(programID);
 	glBindVertexArray(planeVertexArrayObjectID);
 	mat4 planeModelToWorldMatrix = glm::mat4();
 	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	//glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
+
+	// Lightbulb
+	//glUseProgram(passThroughProgramID);
+	//glBindVertexArray(lightbulbVertexArrayObjectID);
+	//mat4 lightbulbModelToWorldMatrix =
+	//	glm::translate(lightPos) * glm::scale(vec3(0.1f, 0.1f, 0.1f));
+	//modelToProjectionMat = worldToProjectionMatrix * lightbulbModelToWorldMatrix;
+	//glUniformMatrix4fv(lightbulbTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	//glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 }
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
@@ -222,35 +234,42 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		camera.moveDown();
 		break;
 	case Qt::Key::Key_J:
-		lightPos_x += 0.2f;
+		lightPos.x += 0.2f;
 		break;
 	case Qt::Key::Key_L:
-		lightPos_x += -0.2f;
+		lightPos.x += -0.2f;
 		break;
 	case Qt::Key::Key_I:
-		lightPos_y += 0.2f;
+		lightPos.y += 0.2f;
 		break;
 	case Qt::Key::Key_K:
-		lightPos_y += -0.2f;
+		lightPos.y += -0.2f;
+		break;
+	case Qt::Key::Key_P:
+		lightPos.z += 0.2f;
+		break;
+	case Qt::Key::Key_O:
+		lightPos.z += -0.2f;
 		break;
 	case Qt::Key::Key_Up:
-		angle_x += 3.6f;
+		cubeAngle.x += 3.6f;
 		break;
 	case Qt::Key::Key_Down:
-		angle_x += -3.6f;
+		cubeAngle.x += -3.6f;
 		break;
 	case Qt::Key::Key_Left:
-		angle_y += -3.6f;
+		cubeAngle.y += -3.6f;
 		break;
 	case Qt::Key::Key_Right:
-		angle_y += 3.6f;
+		cubeAngle.y += 3.6f;
 		break;
 	case Qt::Key::Key_R:
 		camera.resetCamera();
-		angle_x = 0.0f;
-		angle_y = -30.0f;
-		lightPos_x = -2.0f;
-		lightPos_y = 4.0f;
+		cubeAngle.x = 0.0f;
+		cubeAngle.y = -30.0f;
+		lightPos.x = -2.0f;
+		lightPos.y = 4.0f;
+		lightPos.z = -3.5f;
 		break;
 	}
 	repaint();
@@ -290,9 +309,30 @@ void MeGlWindow::installShaders()
 	programID = glCreateProgram();
 	glAttachShader(programID, vertexShaderID);
 	glAttachShader(programID, fragmentShaderID);
-
 	glLinkProgram(programID);
-	glUseProgram(programID);
+
+	glDeleteShader(vertexShaderID);
+	glDeleteShader(fragmentShaderID);
+
+	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+	temp = readShader("VertexShaderPassThrough.glsl");
+	adapter[0] = temp.c_str();
+	glShaderSource(vertexShaderID, 1, adapter, 0);
+	temp = readShader("FragmentShaderPassThrough.glsl");
+	adapter[0] = temp.c_str();
+	glShaderSource(fragmentShaderID, 1, adapter, 0);
+
+	glCompileShader(vertexShaderID);
+	glCompileShader(fragmentShaderID);
+
+	passThroughProgramID = glCreateProgram();
+	glAttachShader(passThroughProgramID, vertexShaderID);
+	glAttachShader(passThroughProgramID, fragmentShaderID);
+	glLinkProgram(passThroughProgramID);
+
+	//glUseProgram(programID);
 }
 
 void MeGlWindow::initTextures()
@@ -325,14 +365,15 @@ void MeGlWindow::initializeGL()
 	initTextures();
 	installShaders();
 	fullTransformUniLoc = glGetUniformLocation(programID, "modelToProjectionMat");
+	lightbulbTransformUniLoc = glGetUniformLocation(passThroughProgramID, "modelToProjectionMat");
 }
 
 MeGlWindow::~MeGlWindow()
 {
 	glDeleteBuffers(1, &bufferID);
 	glDeleteVertexArrays(1, &cubeVertexArrayObjectID);
+	glDeleteVertexArrays(1, &lightbulbVertexArrayObjectID);
 	//glDeleteVertexArrays(1, &arrowVertexArrayObjectID);
-	//glDeleteVertexArrays(1, &sphereVertexArrayObjectID);
 	glDeleteVertexArrays(1, &planeVertexArrayObjectID);
 	glUseProgram(0);
 	glDeleteProgram(programID);

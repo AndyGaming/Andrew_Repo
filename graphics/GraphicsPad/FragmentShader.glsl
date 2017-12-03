@@ -38,9 +38,9 @@ void main()
 	// Attentuation
 	float lightAttenuation = 0.05;
 	float lightDistance = length(lightPositionWorld - vertexPositionWorld);
-	float attenuation = 1.0 / (1.0 + lightAttenuation * pow(lightDistance, 2));
+	float attenuation = 1.0 / (0.1 * lightDistance + lightAttenuation * pow(lightDistance, 2));
 	
-	vec4 lighting = ambientLight + attenuation * (diffuseLight + specularLight);
+	vec4 lighting = ambientLight + attenuation * (diffuseLight);
 	vec4 texColor = texture(texture_1, texCoord);
 	finalColor = normalColor * lighting;
 }
