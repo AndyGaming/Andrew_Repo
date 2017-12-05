@@ -65,13 +65,13 @@ void MeGlWindow::sendContent()
 	currentOffset += cube.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.indexBufferSize(), cube.indices);
 	currentOffset += cube.indexBufferSize();
-	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.vertexBufferSize(), lightbulb.vertices);
+	/*glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.vertexBufferSize(), lightbulb.vertices);
 	currentOffset += lightbulb.vertexBufferSize();
-	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.indexBufferSize(), lightbulb.indices);
+	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.indexBufferSize(), lightbulb.indices);*/
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.vertexBufferSize(), arrow.vertices);
 	//currentOffset += arrow.vertexBufferSize();
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.indexBufferSize(), arrow.indices);
-	currentOffset += lightbulb.indexBufferSize();
+	//currentOffset += lightbulb.indexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.vertexBufferSize(), plane.vertices);
 	currentOffset += plane.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.indexBufferSize(), plane.indices);
@@ -100,29 +100,33 @@ void MeGlWindow::sendContent()
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sizeof(float) * 11));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
-	/*glBindVertexArray(lightbulbVertexArrayObjectID);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-	GLuint lightbulbByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)lightbulbByteOffset);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 3));
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 6));
-	*/
+	//glBindVertexArray(lightbulbVertexArrayObjectID);
+	//glEnableVertexAttribArray(0);
+	//glEnableVertexAttribArray(1);
+	//glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+	//GLuint lightbulbByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)lightbulbByteOffset);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 3));
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
+
 	glBindVertexArray(planeVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	GLuint planeByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
+	//GLuint planeByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)planeByteOffset);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 3));
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 6));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 9));
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 11));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	cubeIndexByteOffset = cube.vertexBufferSize();
-	//lightbulbIndexByteOffset = lightbulb.vertexBufferSize();
+	//lightbulbIndexByteOffset = lightbulbByteOffset + lightbulb.vertexBufferSize();
 	//arrowIndexByteOffset = arrowByteOffset + arrow.vertexBufferSize();
 	planeIndexByteOffset = planeByteOffset + plane.vertexBufferSize();
 
@@ -142,7 +146,7 @@ void MeGlWindow::paintGL()
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
 	
-	glUseProgram(programID);
+	//glUseProgram(programID);
 
 	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMat");
 
@@ -172,14 +176,15 @@ void MeGlWindow::paintGL()
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
+	// Lightbulb
 	//glUseProgram(passThroughProgramID);
+	//glBindVertexArray(lightbulbVertexArrayObjectID);
 	glBindVertexArray(cubeVertexArrayObjectID);
 	cubeTranslateMatrix = glm::translate(lightPos);
-	mat4 cubeScaleMatrix = glm::scale(vec3(0.2f, 0.2f, 0.2f));
+	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
 	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	//glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
@@ -189,16 +194,7 @@ void MeGlWindow::paintGL()
 	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
-	//glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
-
-	// Lightbulb
-	//glUseProgram(passThroughProgramID);
-	//glBindVertexArray(lightbulbVertexArrayObjectID);
-	//mat4 lightbulbModelToWorldMatrix =
-	//	glm::translate(lightPos) * glm::scale(vec3(0.1f, 0.1f, 0.1f));
-	//modelToProjectionMat = worldToProjectionMatrix * lightbulbModelToWorldMatrix;
-	//glUniformMatrix4fv(lightbulbTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	//glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
+	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
@@ -239,16 +235,16 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_L:
 		lightPos.x += -0.2f;
 		break;
-	case Qt::Key::Key_I:
+	case Qt::Key::Key_P:
 		lightPos.y += 0.2f;
 		break;
-	case Qt::Key::Key_K:
+	case Qt::Key::Key_O:
 		lightPos.y += -0.2f;
 		break;
-	case Qt::Key::Key_P:
+	case Qt::Key::Key_I:
 		lightPos.z += 0.2f;
 		break;
-	case Qt::Key::Key_O:
+	case Qt::Key::Key_K:
 		lightPos.z += -0.2f;
 		break;
 	case Qt::Key::Key_Up:
@@ -332,7 +328,8 @@ void MeGlWindow::installShaders()
 	glAttachShader(passThroughProgramID, fragmentShaderID);
 	glLinkProgram(passThroughProgramID);
 
-	//glUseProgram(programID);
+	glUseProgram(programID);
+	//glUseProgram(passThroughProgramID);
 }
 
 void MeGlWindow::initTextures()
