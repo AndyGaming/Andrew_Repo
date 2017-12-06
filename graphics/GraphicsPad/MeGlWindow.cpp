@@ -12,6 +12,7 @@
 using namespace std;
 using glm::vec3;
 using glm::vec4;
+using glm::mat3;
 using glm::mat4;
 
 const uint NUM_VERTICES_PER_TRI = 3;
@@ -23,7 +24,7 @@ GLuint programID;
 GLuint passThroughProgramID;
 GLuint bufferID;
 GLuint textureID;
-GLuint fullTransformUniLoc;
+GLuint MvpUniLoc;
 GLuint lightbulbTransformUniLoc;
 
 GLuint cubeIndices;
@@ -149,6 +150,7 @@ void MeGlWindow::paintGL()
 	//glUseProgram(programID);
 
 	GLuint modelViewMatUniLoc = glGetUniformLocation(programID, "modelViewMat");
+	GLuint normalMatrixUniLoc = glGetUniformLocation(programID, "normalMatrix");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -172,8 +174,10 @@ void MeGlWindow::paintGL()
 	mat4 cubeRotaionMatrix_y = glm::rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
 	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(MvpUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelViewMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
+	mat3 normalMatrix = glm::transpose(glm::inverse(mat3(cubeModelToWorldMatrix)));
+	glUniformMatrix3fv(normalMatrixUniLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Lightbulb
@@ -184,7 +188,9 @@ void MeGlWindow::paintGL()
 	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
 	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(MvpUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	normalMatrix = glm::transpose(glm::inverse(mat3(cubeModelToWorldMatrix)));
+	glUniformMatrix3fv(normalMatrixUniLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
@@ -192,8 +198,10 @@ void MeGlWindow::paintGL()
 	glBindVertexArray(planeVertexArrayObjectID);
 	mat4 planeModelToWorldMatrix = glm::mat4();
 	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	glUniformMatrix4fv(MvpUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
 	glUniformMatrix4fv(modelViewMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
+	normalMatrix = glm::transpose(glm::inverse(mat3(planeModelToWorldMatrix)));
+	glUniformMatrix3fv(normalMatrixUniLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
@@ -361,7 +369,7 @@ void MeGlWindow::initializeGL()
 	sendContent();
 	initTextures();
 	installShaders();
-	fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
+	MvpUniLoc = glGetUniformLocation(programID, "MVP");
 	lightbulbTransformUniLoc = glGetUniformLocation(passThroughProgramID, "modelToProjectionMat");
 }
 

@@ -9,7 +9,7 @@ uniform sampler2D texture_1;
 uniform sampler2D normalMap_1;
 
 struct LightInfo {
-	vec4 position;
+	vec3 position;
 	vec3 intensity;
 };
 
@@ -25,16 +25,16 @@ vec4 phongModel(vec3 norm, vec3 diffR)
 	vec4 ambient = ambientLight * Light.intensity.x;
 
 	// Diffuse
-	float brightness = clamp(dot(lightDir, norm), 0, 1);
+	float brightness = max(dot(lightDir, norm), 0.0);
 	vec4 diffuse = vec4(Light.intensity.y * diffR * brightness, 1.0);
 
 	// Specular
 	vec4 specular = vec4(0.0);
-	if (brightness > 0)
+	if (brightness > 0.0)
 	{
 		vec3 reflectedLightVectorWorld = reflect(-lightDir, norm);
-		float shininess = pow(clamp(dot(reflectedLightVectorWorld, viewDir), 0, 1), Light.intensity.z);
-		specular = clamp(vec4(shininess, shininess, shininess, 1.0), 0, 1);
+		float shininess = pow(max(dot(reflectedLightVectorWorld, viewDir), 0.0), Light.intensity.z);
+		specular = max(vec4(shininess, shininess, shininess, 1.0), 0.0);
 	}
 
 	// Attentuation

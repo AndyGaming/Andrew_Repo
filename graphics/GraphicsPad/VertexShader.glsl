@@ -7,13 +7,14 @@ in layout(location=3) vec2 vertexTexCoord;
 in layout(location=4) vec3 vertexTangent;
 
 struct LightInfo {
-	vec4 position;
+	vec3 position;
 	vec3 intensity;
 };
 
 uniform vec3 lightPositionWorld;
 
 uniform mat4 modelViewMat;
+uniform mat3 normalMatrix;
 uniform mat4 MVP;
 
 out LightInfo Light;
@@ -23,12 +24,10 @@ out vec2 texCoord;
 out vec3 vertexPositionWorld;
 
 void main()
-{	
-	Light.position = vec4(lightPositionWorld, 1.0);
+{
+	Light.position = lightPositionWorld;
 	Light.intensity = vec3(1.0, 1.0, 32.0);
 
-	mat3 normalMatrix = gl_NormalMatrix;
-	//mat3 normalMatrix = transpose(inverse(mat3(modelViewMat)));
 	vec3 norm = normalize(normalMatrix * vertexNormalModel);
 	vec3 tangent = normalize(normalMatrix * vertexTangent);
 
@@ -42,7 +41,7 @@ void main()
 
 	vertexPositionWorld = vec3(modelViewMat * vertexPositionModel);
 
-	lightDir = normalize(toObjectLocal * (Light.position.xyz - vertexPositionWorld));
+	lightDir = normalize(toObjectLocal * (Light.position - vertexPositionWorld));
 	viewDir = toObjectLocal * normalize(-vertexPositionWorld);
 
 	texCoord = vertexTexCoord;
