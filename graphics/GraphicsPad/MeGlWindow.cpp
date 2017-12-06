@@ -148,7 +148,7 @@ void MeGlWindow::paintGL()
 	
 	//glUseProgram(programID);
 
-	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMat");
+	GLuint modelViewMatUniLoc = glGetUniformLocation(programID, "modelViewMat");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -173,7 +173,7 @@ void MeGlWindow::paintGL()
 	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
 	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
+	glUniformMatrix4fv(modelViewMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Lightbulb
@@ -193,7 +193,7 @@ void MeGlWindow::paintGL()
 	mat4 planeModelToWorldMatrix = glm::mat4();
 	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
-	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
+	glUniformMatrix4fv(modelViewMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
 
@@ -235,10 +235,10 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_L:
 		lightPos.x += -0.2f;
 		break;
-	case Qt::Key::Key_P:
+	case Qt::Key::Key_O:
 		lightPos.y += 0.2f;
 		break;
-	case Qt::Key::Key_O:
+	case Qt::Key::Key_P:
 		lightPos.y += -0.2f;
 		break;
 	case Qt::Key::Key_I:
@@ -361,7 +361,7 @@ void MeGlWindow::initializeGL()
 	sendContent();
 	initTextures();
 	installShaders();
-	fullTransformUniLoc = glGetUniformLocation(programID, "modelToProjectionMat");
+	fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
 	lightbulbTransformUniLoc = glGetUniformLocation(passThroughProgramID, "modelToProjectionMat");
 }
 
