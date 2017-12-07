@@ -4,7 +4,7 @@ in vec3 v2fcolor;
 in vec3 AmbientLightColor;
 in vec3 WorldPosition;
 in vec2 f_uv;
-in mat4 TengentToModelTransform;
+in mat4 TangentToModelTransform;
 in mat4 ModelMatrix;
 in vec3 ObjectSpaceNormal;
 out vec4 fragColor;
@@ -22,7 +22,7 @@ void main()
 	//normal map
 	vec4 normalmapcolor = texture(NormalMap,f_uv);
 	vec3 FixedNormalVector = (normalmapcolor.xyz - vec3(0.5f,0.5f,0.5f))*2;
-	vec3 ModelNormal = vec3(TengentToModelTransform * vec4(FixedNormalVector,0.0));
+	vec3 ModelNormal = vec3(TangentToModelTransform * vec4(FixedNormalVector,0.0));
 
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	float distance = length(LightPosition - WorldPosition);

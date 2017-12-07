@@ -10,7 +10,7 @@ out vec3 v2fcolor;
 out vec3 AmbientLightColor;
 out vec3 WorldPosition;
 out vec2 f_uv;
-out mat4 TengentToModelTransform;
+out mat4 TangentToModelTransform;
 out mat4 ModelMatrix;
 out vec3 ObjectSpaceNormal;
 
@@ -26,7 +26,7 @@ void main()
 	WorldPosition = vec3(ModelToWorldMatrix * vec4(Position,1.0));
 	f_uv = uv;
 	vec3 BiotengentVector = normalize(cross(normal,vec3(tangent)) * tangent.w);
-	TengentToModelTransform = mat4(vec4(vec3(tangent),0.0),vec4(BiotengentVector,0.0),vec4(normal,0.0),vec4(Position,1.0));
+	TangentToModelTransform = mat4(vec4(vec3(tangent),0.0),vec4(BiotengentVector,0.0),vec4(normal,0.0),vec4(Position,1.0));
 	ModelMatrix = ModelToWorldMatrix;
 	ObjectSpaceNormal = normal;
 }

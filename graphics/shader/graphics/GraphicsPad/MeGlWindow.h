@@ -10,12 +10,12 @@ class MeGlWindow : public QGLWidget
 protected:
 	void initializeGL();
 	void paintGL();
+	void paintCameraViewObjects(Camera & camera);
 	void mouseMoveEvent(QMouseEvent* e);
 	void sendContent();
 	void installshaders();
 	void keyPressEvent(QKeyEvent*);
 	void initTextures();
-	void DrawObjects(Camera & camera);
 	bool checkShaderStatus(GLuint ShaderID);
 	bool checkProgramStatus(GLuint ProgramID);
 	std::string ReadShaderCode(const char* file);

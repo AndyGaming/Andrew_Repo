@@ -153,11 +153,12 @@ void MeGlWindow::initTextures()
 
 	glGenFramebuffers(1, &frameBufferID);
 	glBindBuffer(GL_FRAMEBUFFER, frameBufferID);
+	glGenTextures(1, &frameTextureID);
+	glBindTexture(GL_TEXTURE_2D, frameTextureID);
+	
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	glDrawBuffer(GL_DEPTH_ATTACHMENT);
 
-	glGenTextures(1, &frameTextureID);
-	glBindTexture(GL_TEXTURE_2D, frameTextureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -379,7 +380,7 @@ void MeGlWindow::paintGL()
 	assert(status == GL_FRAMEBUFFER_COMPLETE);
 
 	LightCamera.setPosition(LightPosition);
-	DrawObjects(LightCamera);
+	paintCameraViewObjects(LightCamera);
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -576,7 +577,7 @@ void MeGlWindow::paintGL()
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 }
 
-void MeGlWindow::DrawObjects(Camera & camera){
+void MeGlWindow::paintCameraViewObjects(Camera & camera){
 
 	mat4 CameraMatrix = camera.getWorldToViewMatrix();
 	mat4 projectionMatrix = perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
