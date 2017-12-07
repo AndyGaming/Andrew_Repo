@@ -12,6 +12,7 @@
 using namespace std;
 using glm::vec3;
 using glm::vec4;
+using glm::mat3;
 using glm::mat4;
 
 const uint NUM_VERTICES_PER_TRI = 3;
@@ -22,20 +23,12 @@ Camera camera;
 GLuint programID;
 GLuint cubeMapProgramID;
 GLuint bufferID;
-GLuint fullTransformUniLoc;
-GLuint lightbulbTransformUniLoc;
 
 GLuint cubeIndices;
 GLuint cubeVertexArrayObjectID;
 GLuint cubeIndexByteOffset;
 
-GLuint lightbulbIndices;
-GLuint lightbulbVertexArrayObjectID;
-GLuint lightbulbIndexByteOffset;
-
-//GLuint arrowIndices;
-//GLuint arrowVertexArrayObjectID;
-//GLuint arrowIndexByteOffset;
+GLuint skyboxIndexByteOffset;
 
 GLuint planeIndices;
 GLuint planeVertexArrayObjectID;
@@ -47,39 +40,28 @@ vec3 lightPos(-2.0f, 4.0f, -3.5f);
 void MeGlWindow::sendContent()
 {
 	ShapeData cube = ShapeGenerator::makeCube();
-	ShapeData lightbulb = ShapeGenerator::makeCube();
-	//ShapeData arrow = ShapeGenerator::makeArrow();
-	ShapeData plane = ShapeGenerator::makePlane();
+	ShapeData plane = ShapeGenerator::makePlane(20);
 
 	glGenBuffers(1, &bufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	glBufferData(GL_ARRAY_BUFFER, 
 		cube.vertexBufferSize() + cube.indexBufferSize()
-		+ lightbulb.vertexBufferSize() + lightbulb.indexBufferSize()
-		//+ arrow.vertexBufferSize() + arrow.indexBufferSize()
 		+ plane.vertexBufferSize() + plane.indexBufferSize(),
 		0, GL_STATIC_DRAW);
+
 	GLsizeiptr currentOffset = 0;
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.vertexBufferSize(), cube.vertices);
 	currentOffset += cube.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.indexBufferSize(), cube.indices);
 	currentOffset += cube.indexBufferSize();
-	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.vertexBufferSize(), arrow.vertices);
-	//currentOffset += arrow.vertexBufferSize();
-	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.indexBufferSize(), arrow.indices);
-	//currentOffset += lightbulb.indexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.vertexBufferSize(), plane.vertices);
 	currentOffset += plane.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, plane.indexBufferSize(), plane.indices);
 
 	cubeIndices = cube.numIndices;
-	lightbulbIndices = lightbulb.numIndices;
-	//arrowIndices = arrow.numIndices;
 	planeIndices = plane.numIndices;
 
 	glGenVertexArrays(1, &cubeVertexArrayObjectID);
-	glGenVertexArrays(1, &lightbulbVertexArrayObjectID);
-	//glGenVertexArrays(1, &arrowVertexArrayObjectID);
 	glGenVertexArrays(1, &planeVertexArrayObjectID);
 
 	glBindVertexArray(cubeVertexArrayObjectID);
@@ -112,12 +94,9 @@ void MeGlWindow::sendContent()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	cubeIndexByteOffset = cube.vertexBufferSize();
-	//arrowIndexByteOffset = arrowByteOffset + arrow.vertexBufferSize();
 	planeIndexByteOffset = planeByteOffset + plane.vertexBufferSize();
 
 	cube.cleanup();
-	lightbulb.cleanup();
-	//arrow.cleanup();
 	plane.cleanup();
 }
 
@@ -125,18 +104,22 @@ void MeGlWindow::paintGL()
 {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
+
+	glUseProgram(programID);
 	
-	mat4 MVP;
 	// Projection matrix
 	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
 	// View matrix
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	// Projection * View
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
+	// Model View Projection
+	mat4 MVP;
 	
-	//glUseProgram(programID);
-
+	GLuint fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
 	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMatrix");
+	GLuint normalMatrixUniLoc = glGetUniformLocation(programID, "normalMatrix");
+	//GLuint cm_modelMatrixUniLoc = glGetUniformLocation(cubeMapProgramID, "modelToWorldMatrix");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -145,44 +128,75 @@ void MeGlWindow::paintGL()
 
 	// Diffuse light
 	GLuint lightPositionWorldUniLoc = glGetUniformLocation(programID, "lightPositionWorld");
-	vec3 lightPositionWorld(lightPos);
-	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPositionWorld[0]);
+	glUniform3fv(lightPositionWorldUniLoc, 1, &lightPos[0]);
 
 	// Specular light
 	GLuint cameraPositionWorldUniLoc = glGetUniformLocation(programID, "cameraPositionWorld");
 	vec3 cameraPosition = camera.getPosition();
 	glUniform3fv(cameraPositionWorldUniLoc, 1, &cameraPosition[0]);
+	//GLuint cm_cameraPositionWorldUniLoc= glGetUniformLocation(cubeMapProgramID, "cameraPositionWorld");
+	//glUniform3fv(cm_cameraPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Cube
-	//glUseProgram(cubeMapProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
+
 	mat4 cubeTranslateMatrix = glm::translate(0.0f, 1.0f, -3.0f);
 	mat4 cubeRotaionMatrix_x = glm::rotate(cubeAngle.x, vec3(1.0f, 0.0f, 0.0f));
 	mat4 cubeRotaionMatrix_y = glm::rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
-	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
-	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
-	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
-	// Lightbulb
-	//glUseProgram(programID);
-	//glBindVertexArray(lightbulbVertexArrayObjectID);
-	glBindVertexArray(cubeVertexArrayObjectID);
-	cubeTranslateMatrix = glm::translate(lightPos);
-	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
-	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
+	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
+
 	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
+
+	//glUniformMatrix4fv(cm_modelMatrixUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
+	mat3 normalMatrix = glm::transpose(glm::inverse(mat3(worldToViewMatrix * cubeModelToWorldMatrix)));
+	glUniformMatrix3fv(normalMatrixUniLoc, 1, GL_FALSE, &normalMatrix[0][0]);
+
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
 	glBindVertexArray(planeVertexArrayObjectID);
+
 	mat4 planeModelToWorldMatrix = glm::mat4();
+	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
+
 	MVP = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
-	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
+
+	//glUniformMatrix4fv(cm_modelMatrixUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
+
+	// Lightbulb
+	//glUseProgram(programID);
+	glBindVertexArray(cubeVertexArrayObjectID);
+
+	cubeTranslateMatrix = glm::translate(lightPos);
+	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
+
+	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
+	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
+
+	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
+
+	// Skybox
+	glUseProgram(cubeMapProgramID);
+	glBindVertexArray(cubeVertexArrayObjectID);
+
+	cubeTranslateMatrix = glm::mat4();
+	cubeScaleMatrix = glm::scale(vec3(20.0f));
+
+	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
+	worldToViewMatrix[3][0] = 0.0;
+	worldToViewMatrix[3][1] = 0.0;
+	worldToViewMatrix[3][2] = 0.0;
+	MVP = viewToProjectionMatrix * worldToViewMatrix * cubeModelToWorldMatrix;
+	GLuint skyboxFullTransformMatUniLoc = glGetUniformLocation(cubeMapProgramID, "MVP");
+	glUniformMatrix4fv(skyboxFullTransformMatUniLoc, 1, GL_FALSE, &MVP[0][0]);
+
+	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 }
 
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
@@ -274,6 +288,39 @@ string MeGlWindow::readShader(const char* fileName)
 	);
 }
 
+bool checkStatus(
+	GLuint objectID,
+	PFNGLGETSHADERIVPROC objectPropertyGetterFunc,
+	PFNGLGETSHADERINFOLOGPROC getInfoLogFunc,
+	GLenum statusType)
+{
+	GLint status;
+	objectPropertyGetterFunc(objectID, statusType, &status);
+	if (status != GL_TRUE)
+	{
+		GLint infoLogLength;
+		objectPropertyGetterFunc(objectID, GL_INFO_LOG_LENGTH, &infoLogLength);
+		GLchar* buffer = new GLchar[infoLogLength];
+
+		GLsizei bufferSize;
+		getInfoLogFunc(objectID, infoLogLength, &bufferSize, buffer);
+		std::cout << buffer << std::endl;
+		delete[] buffer;
+		return false;
+	}
+	return true;
+}
+
+bool MeGlWindow::checkShaderStatus(GLuint shaderID)
+{
+	return checkStatus(shaderID, glGetShaderiv, glGetShaderInfoLog, GL_COMPILE_STATUS);
+}
+
+bool MeGlWindow::checkProgramStatus(GLuint programID)
+{
+	return checkStatus(programID, glGetProgramiv, glGetProgramInfoLog, GL_LINK_STATUS);
+}
+
 void MeGlWindow::installShaders()
 {
 	GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -290,10 +337,16 @@ void MeGlWindow::installShaders()
 	glCompileShader(vertexShaderID);
 	glCompileShader(fragmentShaderID);
 
+	if (!checkShaderStatus(vertexShaderID) || !checkShaderStatus(fragmentShaderID))
+		return;
+
 	programID = glCreateProgram();
 	glAttachShader(programID, vertexShaderID);
 	glAttachShader(programID, fragmentShaderID);
 	glLinkProgram(programID);
+
+	if (!checkProgramStatus(programID))
+		return;
 
 	glDeleteShader(vertexShaderID);
 	glDeleteShader(fragmentShaderID);
@@ -311,13 +364,19 @@ void MeGlWindow::installShaders()
 	glCompileShader(vertexShaderID);
 	glCompileShader(fragmentShaderID);
 
+	if (!checkShaderStatus(vertexShaderID) || !checkShaderStatus(fragmentShaderID))
+		return;
+
 	cubeMapProgramID = glCreateProgram();
 	glAttachShader(cubeMapProgramID, vertexShaderID);
 	glAttachShader(cubeMapProgramID, fragmentShaderID);
 	glLinkProgram(cubeMapProgramID);
 
-	glUseProgram(programID);
-	//glUseProgram(cubeMapProgramID);
+	if (!checkProgramStatus(cubeMapProgramID))
+		return;
+
+	glDeleteShader(vertexShaderID);
+	glDeleteShader(fragmentShaderID);
 }
 
 void MeGlWindow::initTextures()
@@ -337,7 +396,7 @@ void MeGlWindow::initTextures()
 	glTexImage2D(
 		GL_TEXTURE_2D, 0, GL_RGBA, tex_N_1.width(), tex_N_1.height(),
 		0, GL_RGBA, GL_UNSIGNED_BYTE, tex_N_1.bits());
-	glUniform1i(glGetUniformLocation(programID, "normalMap_1"), GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(programID, "normalMap_1"), 0);
 
 	// Cube map
 	glActiveTexture(GL_TEXTURE1);
@@ -364,12 +423,12 @@ void MeGlWindow::initTextures()
 			0, GL_RGBA, GL_UNSIGNED_BYTE, cubeMap.bits());
 	}
 
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glUniform1i(glGetUniformLocation(programID, "cubeMapTex"), GL_TEXTURE1);
+	glUniform1i(glGetUniformLocation(cubeMapProgramID, "cubeMapTex"), 1);
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -383,16 +442,12 @@ void MeGlWindow::initializeGL()
 	sendContent();
 	initTextures();
 	installShaders();
-	fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
-	//lightbulbTransformUniLoc = glGetUniformLocation(cubeMapProgramID, "MVP");
 }
 
 MeGlWindow::~MeGlWindow()
 {
 	glDeleteBuffers(1, &bufferID);
 	glDeleteVertexArrays(1, &cubeVertexArrayObjectID);
-	glDeleteVertexArrays(1, &lightbulbVertexArrayObjectID);
-	//glDeleteVertexArrays(1, &arrowVertexArrayObjectID);
 	glDeleteVertexArrays(1, &planeVertexArrayObjectID);
 	glUseProgram(0);
 	glDeleteProgram(programID);

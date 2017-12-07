@@ -8,6 +8,7 @@ in layout(location=4) vec3 vertexTangentModel;
 
 uniform mat4 MVP;
 uniform mat4 modelToWorldMatrix;
+uniform mat3 normalMatrix;
 
 out vec3 vertexPositionWorld;
 out vec2 texCoord;
@@ -19,9 +20,12 @@ void main()
 	vertexPositionWorld = vec3(modelToWorldMatrix * vertexPositionModel);
 	texCoord = texCoordModel;
 
-	vec3 bitangent = normalize(cross(vertexNormalModel, vertexTangentModel));
+	//mat3 normalMatrix = transpose(inverse(mat3(viewMatrix * modelToWorldMatrix)));
+	vec3 norm = normalize(normalMatrix * vertexNormalModel);
+	vec3 tang = normalize(normalMatrix * vertexTangentModel);
+	vec3 binormal = normalize(cross(norm, tang));
 
 	tangentToModelMat = mat4(
-		vec4(vertexTangentModel, 0), vec4(bitangent, 0), vec4(vertexNormalModel, 0), vertexPositionModel
+		vec4(vertexTangentModel, 0), vec4(binormal, 0), vec4(vertexNormalModel, 0), vertexPositionModel
 	);
 }

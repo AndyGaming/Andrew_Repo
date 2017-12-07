@@ -8,6 +8,8 @@ class MeGlWindow : public QGLWidget
 {
 	void sendContent();
 	std::string readShader(const char* fileName);
+	bool checkShaderStatus(GLuint shaderID);
+	bool checkProgramStatus(GLuint programID);
 	void installShaders();
 	void initTextures();
 protected:

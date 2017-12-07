@@ -1,10 +1,12 @@
 #version 430
 
 in layout(location=0) vec4 vertexPositionModel;
-in layout(location=1) vec3 vertexNormalModel;
-in layout(location=2) vec2 texCoordModel;
+in layout(location=1) vec3 vertexColor;
+in layout(location=2) vec3 vertexNormalModel;
+in layout(location=3) vec2 texCoordModel;
 
 out vec3 reflectDir;
+out vec3 refractDir;
 
 uniform bool drawSkyBox;
 uniform vec3 cameraPositionWorld;
@@ -16,8 +18,10 @@ uniform mat4 MVP;
 
 void main()
 {
-	if (true) {
-		reflectDir = vertexPositionModel;
+	bool b = true;
+
+	if (b) {
+		reflectDir = vec3(vertexPositionModel);
 	}
 	else {
 		vec3 worldPos = vec3(modelToWorldMatrix * vertexPositionModel);
