@@ -18,7 +18,7 @@
   <ItemGroup>
     <None Include="VertexShader.glsl" />
     <None Include="FragmentShader.glsl" />
-    <None Include="VertexShaderPassThrough.glsl" />
-    <None Include="FragmentShaderPassThrough.glsl" />
+    <None Include="CubemapVertexShader.glsl" />
+    <None Include="CubemapFragmentShader.glsl" />
   </ItemGroup>
 </Project>

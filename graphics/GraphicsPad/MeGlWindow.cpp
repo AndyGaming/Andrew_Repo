@@ -20,9 +20,8 @@ const uint VERTEX_BYTE_SIZE = NUM_FLOATS_PER_VERTICE * sizeof(float);
 
 Camera camera;
 GLuint programID;
-GLuint passThroughProgramID;
+GLuint cubeMapProgramID;
 GLuint bufferID;
-GLuint textureID;
 GLuint fullTransformUniLoc;
 GLuint lightbulbTransformUniLoc;
 
@@ -65,9 +64,6 @@ void MeGlWindow::sendContent()
 	currentOffset += cube.vertexBufferSize();
 	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, cube.indexBufferSize(), cube.indices);
 	currentOffset += cube.indexBufferSize();
-	/*glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.vertexBufferSize(), lightbulb.vertices);
-	currentOffset += lightbulb.vertexBufferSize();
-	glBufferSubData(GL_ARRAY_BUFFER, currentOffset, lightbulb.indexBufferSize(), lightbulb.indices);*/
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.vertexBufferSize(), arrow.vertices);
 	//currentOffset += arrow.vertexBufferSize();
 	//glBufferSubData(GL_ARRAY_BUFFER, currentOffset, arrow.indexBufferSize(), arrow.indices);
@@ -100,15 +96,6 @@ void MeGlWindow::sendContent()
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(sizeof(float) * 11));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
-	//glBindVertexArray(lightbulbVertexArrayObjectID);
-	//glEnableVertexAttribArray(0);
-	//glEnableVertexAttribArray(1);
-	//glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-	//GLuint lightbulbByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)lightbulbByteOffset);
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(lightbulbByteOffset + sizeof(float) * 3));
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
-
 	glBindVertexArray(planeVertexArrayObjectID);
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -117,7 +104,6 @@ void MeGlWindow::sendContent()
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, bufferID);
 	GLuint planeByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
-	//GLuint planeByteOffset = cube.vertexBufferSize() + cube.indexBufferSize();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)planeByteOffset);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 3));
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, VERTEX_BYTE_SIZE, (void*)(planeByteOffset + sizeof(float) * 6));
@@ -126,7 +112,6 @@ void MeGlWindow::sendContent()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
 
 	cubeIndexByteOffset = cube.vertexBufferSize();
-	//lightbulbIndexByteOffset = lightbulbByteOffset + lightbulb.vertexBufferSize();
 	//arrowIndexByteOffset = arrowByteOffset + arrow.vertexBufferSize();
 	planeIndexByteOffset = planeByteOffset + plane.vertexBufferSize();
 
@@ -141,14 +126,17 @@ void MeGlWindow::paintGL()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
 	
-	mat4 modelToProjectionMat;
+	mat4 MVP;
+	// Projection matrix
 	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
+	// View matrix
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
+	// Projection * View
 	mat4 worldToProjectionMatrix = viewToProjectionMatrix * worldToViewMatrix;
 	
 	//glUseProgram(programID);
 
-	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMat");
+	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMatrix");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -166,33 +154,33 @@ void MeGlWindow::paintGL()
 	glUniform3fv(cameraPositionWorldUniLoc, 1, &cameraPosition[0]);
 
 	// Cube
+	//glUseProgram(cubeMapProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
 	mat4 cubeTranslateMatrix = glm::translate(0.0f, 1.0f, -3.0f);
 	mat4 cubeRotaionMatrix_x = glm::rotate(cubeAngle.x, vec3(1.0f, 0.0f, 0.0f));
 	mat4 cubeRotaionMatrix_y = glm::rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
 	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
-	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Lightbulb
-	//glUseProgram(passThroughProgramID);
+	//glUseProgram(programID);
 	//glBindVertexArray(lightbulbVertexArrayObjectID);
 	glBindVertexArray(cubeVertexArrayObjectID);
 	cubeTranslateMatrix = glm::translate(lightPos);
 	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
 	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
-	modelToProjectionMat = worldToProjectionMatrix * cubeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
-	//glUseProgram(programID);
 	glBindVertexArray(planeVertexArrayObjectID);
 	mat4 planeModelToWorldMatrix = glm::mat4();
-	modelToProjectionMat = worldToProjectionMatrix * planeModelToWorldMatrix;
-	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &modelToProjectionMat[0][0]);
+	MVP = worldToProjectionMatrix * planeModelToWorldMatrix;
+	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 }
@@ -313,31 +301,33 @@ void MeGlWindow::installShaders()
 	vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
-	temp = readShader("VertexShaderPassThrough.glsl");
+	temp = readShader("CubemapVertexShader.glsl");
 	adapter[0] = temp.c_str();
 	glShaderSource(vertexShaderID, 1, adapter, 0);
-	temp = readShader("FragmentShaderPassThrough.glsl");
+	temp = readShader("CubemapFragmentShader.glsl");
 	adapter[0] = temp.c_str();
 	glShaderSource(fragmentShaderID, 1, adapter, 0);
 
 	glCompileShader(vertexShaderID);
 	glCompileShader(fragmentShaderID);
 
-	passThroughProgramID = glCreateProgram();
-	glAttachShader(passThroughProgramID, vertexShaderID);
-	glAttachShader(passThroughProgramID, fragmentShaderID);
-	glLinkProgram(passThroughProgramID);
+	cubeMapProgramID = glCreateProgram();
+	glAttachShader(cubeMapProgramID, vertexShaderID);
+	glAttachShader(cubeMapProgramID, fragmentShaderID);
+	glLinkProgram(cubeMapProgramID);
 
 	glUseProgram(programID);
-	//glUseProgram(passThroughProgramID);
+	//glUseProgram(cubeMapProgramID);
 }
 
 void MeGlWindow::initTextures()
 {
 	glEnable(GL_TEXTURE_2D);
+	GLuint textureID;
+	string baseTexPath = "../Textures/";
 
-	//int width = 64, height = 64;
-	QImage tex_1 = QGLWidget::convertToGLFormat(QImage("Shapes.png", "png"));
+	// Normal map - Shapes
+	QImage tex_N_1 = QGLWidget::convertToGLFormat(QImage("../Textures/Shapes.png", "png"));
 
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &textureID);
@@ -345,9 +335,41 @@ void MeGlWindow::initTextures()
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // GL_NEAREST
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(
-		GL_TEXTURE_2D, 0, GL_RGBA, tex_1.width(), tex_1.height(),
-		0, GL_RGBA, GL_UNSIGNED_BYTE, tex_1.bits());
+		GL_TEXTURE_2D, 0, GL_RGBA, tex_N_1.width(), tex_N_1.height(),
+		0, GL_RGBA, GL_UNSIGNED_BYTE, tex_N_1.bits());
 	glUniform1i(glGetUniformLocation(programID, "normalMap_1"), GL_TEXTURE0);
+
+	// Cube map
+	glActiveTexture(GL_TEXTURE1);
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	const char* suffix[] = {
+		"posx", "negx", "posy", "negy", "posz", "negz"
+	};
+	GLuint targets[] = {
+		GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+	};
+
+	for (int i = 0; i < 6; i++) {
+		string texName = baseTexPath + suffix[i] + ".png";
+		QImage cubeMap = QGLWidget::convertToGLFormat(QImage(texName.c_str(), "png"));
+		glTexImage2D(
+			targets[i], 0, GL_RGBA, cubeMap.width(), cubeMap.height(),
+			0, GL_RGBA, GL_UNSIGNED_BYTE, cubeMap.bits());
+	}
+
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glUniform1i(glGetUniformLocation(programID, "cubeMapTex"), GL_TEXTURE1);
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -361,8 +383,8 @@ void MeGlWindow::initializeGL()
 	sendContent();
 	initTextures();
 	installShaders();
-	fullTransformUniLoc = glGetUniformLocation(programID, "modelToProjectionMat");
-	lightbulbTransformUniLoc = glGetUniformLocation(passThroughProgramID, "modelToProjectionMat");
+	fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
+	//lightbulbTransformUniLoc = glGetUniformLocation(cubeMapProgramID, "MVP");
 }
 
 MeGlWindow::~MeGlWindow()

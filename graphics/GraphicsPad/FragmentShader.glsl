@@ -3,14 +3,13 @@
 out vec4 finalColor;
 
 in vec3 vertexPositionWorld;
-//in vec3 normalWorld;
 in vec2 texCoord;
 in mat4 tangentToModelMat;
 
 uniform vec3 lightPositionWorld;
 uniform vec3 cameraPositionWorld;
 uniform vec4 ambientLight;
-uniform mat4 modelToWorldMat;
+uniform mat4 modelToWorldMatrix;
 
 uniform sampler2D texture_1;
 uniform sampler2D normalMap_1;
@@ -21,7 +20,7 @@ void main()
 	vec4 normalColor = texture(normalMap_1, texCoord);
 	vec3 normalTangent = 2 * normalColor.xyz - 1;
 	vec3 normalModel = vec3(tangentToModelMat * vec4(normalTangent, 0));
-	vec3 normalWorld = vec3(modelToWorldMat * vec4(normalModel, 1));
+	vec3 normalWorld = vec3(modelToWorldMatrix * vec4(normalModel, 1));
 
 	// Diffuse
 	vec3 lightVectorWorld = normalize(lightPositionWorld - vertexPositionWorld);
