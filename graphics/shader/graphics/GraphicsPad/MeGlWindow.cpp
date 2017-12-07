@@ -9,6 +9,9 @@
 #include <iostream>
 #include <fstream>
 
+using namespace std;
+using namespace glm;
+
 static GLuint cubeIndexBufferOffset;
 static GLuint planeIndexBufferOffset;
 static GLuint cubeIndices;
@@ -26,14 +29,14 @@ GLuint frameBufferID;
 GLuint frameTextureID;
 GLuint frameDepthID;
 
-GLfloat AttenuationFactor = 0.08;
+GLfloat attenuationAmount = 0.08;
 
 Camera MainCamera;
 Camera LightCamera;
 
-glm::vec3 LightPosition(0.0f, 2.5f, -3.0f);
+vec3 LightPosition(0.0f, 2.5f, -2.0f);
 float RotationAngle = 0.0f;
-glm::vec3 colorVariation = glm::vec3(0.01f, 0.02f, 0.03f);
+vec3 colorVariation = vec3(0.01f, 0.02f, 0.03f);
 bool plusVariation = true;
 
 const char* MeGlWindow::TexFile[] = { "posx.png","negx.png","negy.png","posy.png","posz.png","negz.png" };
@@ -94,34 +97,56 @@ void MeGlWindow::sendContent()
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(11 * sizeof(float)+ Cube.VertexBufferSize() + Cube.IndicesBufferSize()));
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
+	
+	Cube.cleanup();
+	Plane.cleanup();
+}
+
+void MeGlWindow::initTextures() 
+{
+	const string baseTexPath = "../Textures/";
 
 	const char* texName = "Splatter.png";
-	QImage texture = QGLWidget::convertToGLFormat(QImage(texName, "PNG"));
+	string texFileName = baseTexPath + texName;
+	QImage texture = QGLWidget::convertToGLFormat(QImage(texFileName.c_str(), "PNG"));
 
 	glActiveTexture(GL_TEXTURE0);
 
 	GLuint TextureBufferID;
 	glGenTextures(1, &TextureBufferID);
 	glBindTexture(GL_TEXTURE_2D, TextureBufferID);
-	//	int a = texture.height();
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.width(), texture.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.bits());
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	const char* normalMapName = "Shapes.png";
-	QImage Normalmap = QGLWidget::convertToGLFormat(QImage(normalMapName, "PNG"));
+	texFileName = baseTexPath + normalMapName;
+	QImage Normalmap = QGLWidget::convertToGLFormat(QImage(texFileName.c_str(), "PNG"));
 
 	glActiveTexture(GL_TEXTURE1);
 
 	GLuint normalBufferID;
-	glGenTextures(1,&normalBufferID);
+	glGenTextures(1, &normalBufferID);
 	glBindTexture(GL_TEXTURE_2D, normalBufferID);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Normalmap.width(), Normalmap.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, Normalmap.bits());
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	LoadCubeMap();
+	glActiveTexture(GL_TEXTURE2);
+	GLuint CubeBufferID;
+	glGenTextures(1, &CubeBufferID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, CubeBufferID);
+
+	for (int i = 0; i < 6; ++i) {
+		texFileName = baseTexPath + TexFile[i];
+		QImage Texdata = QGLWidget::convertToGLFormat(QImage(texFileName.c_str(), "PNG"));
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, Texdata.width(), Texdata.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, Texdata.bits());
+	}
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glActiveTexture(GL_TEXTURE3);
 
@@ -132,7 +157,7 @@ void MeGlWindow::sendContent()
 
 	glGenTextures(1, &frameTextureID);
 	glBindTexture(GL_TEXTURE_2D, frameTextureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_FLOAT,NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width(), height(), 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -142,25 +167,6 @@ void MeGlWindow::sendContent()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width(), height(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	Cube.cleanup();
-	Plane.cleanup();
-}
-
-void MeGlWindow::LoadCubeMap() {
-	glActiveTexture(GL_TEXTURE2);
-	GLuint CubeBufferID;
-	glGenTextures(1, &CubeBufferID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, CubeBufferID);
-	
-	for (int i = 0; i < 6; ++i) {
-		QImage Texdata = QGLWidget::convertToGLFormat(QImage(TexFile[i], "PNG"));
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, Texdata.width(), Texdata.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, Texdata.bits());
-	}
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 bool checkStatus(
@@ -350,6 +356,7 @@ void MeGlWindow::initializeGL()
 	glEnable(GL_DEPTH_TEST);
 	installshaders();
 	sendContent();
+	initTextures();
 
 	Mytimer = new QTimer(this);
 	connect(Mytimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -376,12 +383,12 @@ void MeGlWindow::paintGL()
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, width(), height());
-	glm::mat4 CameraMatrix = MainCamera.getWorldToViewMatrix();
-	glm::mat4 projectionMatrix = glm::perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
+	mat4 CameraMatrix = MainCamera.getWorldToViewMatrix();
+	mat4 projectionMatrix = perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
 
-	glm::mat4 WorldToProjectionMatrix = projectionMatrix * CameraMatrix;
+	mat4 WorldToProjectionMatrix = projectionMatrix * CameraMatrix;
 
-	glm::mat4 FullTransformMatrix;
+	mat4 FullTransformMatrix;
 
 	glUseProgram(programID);
 
@@ -394,11 +401,11 @@ void MeGlWindow::paintGL()
 	FullTransformMatrixUniformLocaiton = glGetUniformLocation(programID, "FullTransformMatrix");
 	GLuint ModelToWorldMatrixUniformLocation;
 	ModelToWorldMatrixUniformLocation = glGetUniformLocation(programID, "ModelToWorldMatrix");
-	glm::mat4 TransformMatrix;
-	glm::mat4 RotationMatrix;
-	glm::mat4 ScaleMatrix;
+	mat4 TransformMatrix;
+	mat4 RotationMatrix;
+	mat4 ScaleMatrix;
 	//Light Begins Here
-	glm::vec3 AmbientLight(0.2f, 0.2f, 0.2f);
+	vec3 AmbientLight(0.2f, 0.2f, 0.2f);
 
 	GLuint AmbientLightUniformLocation = glGetUniformLocation(programID, "AmbientLight");
 	glUniform3fv(AmbientLightUniformLocation, 1, &AmbientLight[0]);
@@ -409,16 +416,16 @@ void MeGlWindow::paintGL()
 	GLuint ViewPositionUniformLocation = glGetUniformLocation(programID, "ViewPosition");
 	glUniform3fv(ViewPositionUniformLocation, 1, &MainCamera.getPosition()[0]);
 
-	GLuint AttenuationUniformLocation = glGetUniformLocation(programID, "AttenuationFactor");
-	glUniform1f(AttenuationUniformLocation, AttenuationFactor);
+	GLuint AttenuationUniformLocation = glGetUniformLocation(programID, "attenuationAmount");
+	glUniform1f(AttenuationUniformLocation, attenuationAmount);
 
 	//Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(+3.0f, 0.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 60.0f, glm::vec3(-1.0f, 1.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(+3.0f, 0.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), 60.0f, vec3(-1.0f, 1.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
-	glm::mat4 CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
+	mat4 CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
 
 	glUniformMatrix4fv(FullTransformMatrixUniformLocaiton, 1, GL_FALSE, &FullTransformMatrix[0][0]);
 	glUniformMatrix4fv(ModelToWorldMatrixUniformLocation, 1, GL_FALSE, &CubeModelToWorldMatrix[0][0]);
@@ -427,8 +434,8 @@ void MeGlWindow::paintGL()
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(+4.0f, 2.0f, -1.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 45.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	TransformMatrix = translate(mat4(), vec3(+4.0f, 2.0f, -1.0f));
+	RotationMatrix = rotate(mat4(), 45.0f, vec3(0.0f, 0.0f, 1.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -444,21 +451,21 @@ void MeGlWindow::paintGL()
 
 	TextureUniformLocation = glGetUniformLocation(shadowProgramID, "tex_temp");
 	glUniform1i(TextureUniformLocation, 0);
-	NormalmapUniformLocation = glGetUniformLocation(shadowProgramID, "NormalMap");
-	glUniform1i(NormalmapUniformLocation, 1);
+	//NormalmapUniformLocation = glGetUniformLocation(shadowProgramID, "NormalMap");
+	//glUniform1i(NormalmapUniformLocation, 1);
 
 	GLint ShadowMapUniformLocation = glGetUniformLocation(shadowProgramID, "ShadowMap");
 	glUniform1i(ShadowMapUniformLocation, 4);
 
-	glm::mat4 LightWorldToProjectionMatrix = projectionMatrix * LightCamera.getWorldToViewMatrix();
+	mat4 LightWorldToProjectionMatrix = projectionMatrix * LightCamera.getWorldToViewMatrix();
 	GLint LightFullTransformMatrixUniformLocaiton = glGetUniformLocation(shadowProgramID, "LightFullTransformMatrix");
 	glUniformMatrix4fv(LightFullTransformMatrixUniformLocaiton, 1, GL_FALSE, &LightWorldToProjectionMatrix[0][0]);
 
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-0.0f, -2.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(-0.0f, -2.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), 0.0f, vec3(1.0f, 0.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
-	glm::mat4 PlaneModelToWorldMatrix = TransformMatrix * RotationMatrix;
+	mat4 PlaneModelToWorldMatrix = TransformMatrix * RotationMatrix;
 
 	AmbientLightUniformLocation = glGetUniformLocation(shadowProgramID, "AmbientLight");
 	glUniform3fv(AmbientLightUniformLocation, 1, &AmbientLight[0]);
@@ -469,8 +476,8 @@ void MeGlWindow::paintGL()
 	ViewPositionUniformLocation = glGetUniformLocation(shadowProgramID, "ViewPosition");
 	glUniform3fv(ViewPositionUniformLocation, 1, &MainCamera.getPosition()[0]);
 
-	AttenuationUniformLocation = glGetUniformLocation(shadowProgramID, "AttenuationFactor");
-	glUniform1f(AttenuationUniformLocation, AttenuationFactor);
+	AttenuationUniformLocation = glGetUniformLocation(shadowProgramID, "attenuationAmount");
+	glUniform1f(AttenuationUniformLocation, attenuationAmount);
 	FullTransformMatrixUniformLocaiton = glGetUniformLocation(shadowProgramID, "FullTransformMatrix");
 	ModelToWorldMatrixUniformLocation = glGetUniformLocation(shadowProgramID, "ModelToWorldMatrix");
 	glUniformMatrix4fv(FullTransformMatrixUniformLocaiton, 1, GL_FALSE, &FullTransformMatrix[0][0]);
@@ -481,9 +488,9 @@ void MeGlWindow::paintGL()
 	//CubeLight
 	glUseProgram(lightProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), LightPosition);
-	RotationMatrix = glm::rotate(glm::mat4(), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.08f, 0.08f, 0.08f));
+	TransformMatrix = translate(mat4(), LightPosition);
+	RotationMatrix = rotate(mat4(), 0.0f, vec3(1.0f, 0.0f, 0.0f));
+	ScaleMatrix = scale(mat4(), vec3(0.08f, 0.08f, 0.08f));
 
 	GLuint LightTransformMatrixUniformLocation = glGetUniformLocation(lightProgramID, "LightTransformMatrix");
 	FullTransformMatrix = WorldToProjectionMatrix  *  TransformMatrix * ScaleMatrix * RotationMatrix;
@@ -493,8 +500,8 @@ void MeGlWindow::paintGL()
 
 	//Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-3.0f, 0.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(-3.0f, 0.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), 45.0f, vec3(0.0f, 1.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -506,9 +513,9 @@ void MeGlWindow::paintGL()
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-6.0f, 0.0f, -2.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 15.0f, glm::vec3(0.0f, 1.0f, -1.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.5f));
+	TransformMatrix = translate(mat4(), vec3(-6.0f, 0.0f, -2.0f));
+	RotationMatrix = rotate(mat4(), 15.0f, vec3(0.0f, 1.0f, -1.0f));
+	ScaleMatrix = scale(mat4(), vec3(0.5f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix * ScaleMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -520,9 +527,9 @@ void MeGlWindow::paintGL()
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-1.0f, 4.0f, -2.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 70.0f, glm::vec3(1.0f, 1.0f, 0.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.8f));
+	TransformMatrix = translate(mat4(), vec3(-1.0f, 4.0f, -2.0f));
+	RotationMatrix = rotate(mat4(), 70.0f, vec3(1.0f, 1.0f, 0.0f));
+	ScaleMatrix = scale(mat4(), vec3(0.8f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix * ScaleMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -534,10 +541,10 @@ void MeGlWindow::paintGL()
 
 	// Color changing
 	if (plusVariation) {
-		colorVariation += glm::vec3(0.0001f, 0.0003f, 0.0005f);
+		colorVariation += vec3(0.0001f, 0.0003f, 0.0005f);
 	}
 	else {
-		colorVariation -= glm::vec3(0.0001f, 0.0003f, 0.0005f);
+		colorVariation -= vec3(0.0001f, 0.0003f, 0.0005f);
 	}
 	if (colorVariation.x >= 1 || colorVariation.y >= 1 || colorVariation.z >= 1) {
 		plusVariation = false;
@@ -555,7 +562,7 @@ void MeGlWindow::paintGL()
 	glUniform1i(CubeMapUniformLocation, 2);
 
 	glBindVertexArray(cubeVertexArrayObjectID);
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(50.0f, 50.0f, 50.0f));
+	ScaleMatrix = scale(mat4(), vec3(50.0f, 50.0f, 50.0f));
 
 	GLuint SkyboxTransformMatrixUniformLocation = glGetUniformLocation(cubeMapProgramID, "SkyboxTransformMatrix");
 	CameraMatrix[3][0] = 0.0;
@@ -572,13 +579,13 @@ void MeGlWindow::paintGL()
 	glUniform1i(TextureUniformLocation, 4);
 	glBindVertexArray(cubeVertexArrayObjectID);
 	CameraMatrix = MainCamera.getWorldToViewMatrix();
-	projectionMatrix = glm::perspective(60.0f, ((float)width() / height()), 0.1f, 100.0f);
+	projectionMatrix = perspective(60.0f, ((float)width() / height()), 0.1f, 100.0f);
 
 	WorldToProjectionMatrix = projectionMatrix * CameraMatrix;
 
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f,0.0f,-5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(1.0f, 1.0f, 1.0f));
+	TransformMatrix = translate(mat4(), vec3(0.0f,0.0f,-5.0f));
+	RotationMatrix = rotate(mat4(), 0.0f, vec3(1.0f, 0.0f, 0.0f));
+	ScaleMatrix = scale(mat4(), vec3(1.0f, 1.0f, 1.0f));
 
 	GLuint FullTransformMatrixUniformLocation = glGetUniformLocation(testProgramID, "FullTransformMatrix");
 	FullTransformMatrix = WorldToProjectionMatrix  *  TransformMatrix * ScaleMatrix * RotationMatrix;
@@ -589,12 +596,12 @@ void MeGlWindow::paintGL()
 
 void MeGlWindow::DrawObjects(Camera & camera){
 
-	glm::mat4 CameraMatrix = camera.getWorldToViewMatrix();
-	glm::mat4 projectionMatrix = glm::perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
+	mat4 CameraMatrix = camera.getWorldToViewMatrix();
+	mat4 projectionMatrix = perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
 
-	glm::mat4 WorldToProjectionMatrix = projectionMatrix * CameraMatrix;
+	mat4 WorldToProjectionMatrix = projectionMatrix * CameraMatrix;
 
-	glm::mat4 FullTransformMatrix;
+	mat4 FullTransformMatrix;
 
 	glUseProgram(programID);
 
@@ -607,11 +614,11 @@ void MeGlWindow::DrawObjects(Camera & camera){
 	FullTransformMatrixUniformLocaiton = glGetUniformLocation(programID, "FullTransformMatrix");
 	GLuint ModelToWorldMatrixUniformLocation;
 	ModelToWorldMatrixUniformLocation = glGetUniformLocation(programID, "ModelToWorldMatrix");
-	glm::mat4 TransformMatrix;
-	glm::mat4 RotationMatrix;
+	mat4 TransformMatrix;
+	mat4 RotationMatrix;
 
 	//Light Begins Here
-	glm::vec3 AmbientLight(0.2f, 0.2f, 0.2f);
+	vec3 AmbientLight(0.2f, 0.2f, 0.2f);
 
 	GLuint AmbientLightUniformLocation = glGetUniformLocation(programID, "AmbientLight");
 	glUniform3fv(AmbientLightUniformLocation, 1, &AmbientLight[0]);
@@ -622,16 +629,16 @@ void MeGlWindow::DrawObjects(Camera & camera){
 	GLuint ViewPositionUniformLocation = glGetUniformLocation(programID, "ViewPosition");
 	glUniform3fv(ViewPositionUniformLocation, 1, &camera.getPosition()[0]);
 
-	GLuint AttenuationUniformLocation = glGetUniformLocation(programID, "AttenuationFactor");
-	glUniform1f(AttenuationUniformLocation,AttenuationFactor);
+	GLuint AttenuationUniformLocation = glGetUniformLocation(programID, "attenuationAmount");
+	glUniform1f(AttenuationUniformLocation,attenuationAmount);
 
 	//Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-3.0f, 0.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 66.0f, glm::vec3(1.0f, -1.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(-3.0f, 0.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), 66.0f, vec3(1.0f, -1.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
-	glm::mat4 CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
+	mat4 CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
 
 	glUniformMatrix4fv(FullTransformMatrixUniformLocaiton, 1, GL_FALSE, &FullTransformMatrix[0][0]);
 	glUniformMatrix4fv(ModelToWorldMatrixUniformLocation, 1, GL_FALSE, &CubeModelToWorldMatrix[0][0]);
@@ -640,8 +647,8 @@ void MeGlWindow::DrawObjects(Camera & camera){
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(+4.0f, 2.0f, -1.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 45.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+	TransformMatrix = translate(mat4(), vec3(+4.0f, 2.0f, -1.0f));
+	RotationMatrix = rotate(mat4(), 45.0f, vec3(0.0f, 0.0f, 1.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -653,11 +660,11 @@ void MeGlWindow::DrawObjects(Camera & camera){
 
 	//plane
 	glBindVertexArray(planeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-0.0f, -2.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(-0.0f, -2.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), 0.0f, vec3(1.0f, 0.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
-	glm::mat4 PlaneModelToWorldMatrix = TransformMatrix * RotationMatrix;
+	mat4 PlaneModelToWorldMatrix = TransformMatrix * RotationMatrix;
 
 	glUniformMatrix4fv(FullTransformMatrixUniformLocaiton, 1, GL_FALSE, &FullTransformMatrix[0][0]);
 	glUniformMatrix4fv(ModelToWorldMatrixUniformLocation, 1, GL_FALSE, &PlaneModelToWorldMatrix[0][0]);
@@ -667,9 +674,9 @@ void MeGlWindow::DrawObjects(Camera & camera){
 	//CubeLight
 	glUseProgram(lightProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(),LightPosition);
-	RotationMatrix = glm::rotate(glm::mat4(), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.08f, 0.08f, 0.08f));
+	TransformMatrix = translate(mat4(),LightPosition);
+	RotationMatrix = rotate(mat4(), 0.0f, vec3(1.0f, 0.0f, 0.0f));
+	mat4 ScaleMatrix = scale(mat4(), vec3(0.08f, 0.08f, 0.08f));
 
 	GLuint LightTransformMatrixUniformLocation = glGetUniformLocation(lightProgramID, "LightTransformMatrix");
 	FullTransformMatrix = WorldToProjectionMatrix  *  TransformMatrix * ScaleMatrix * RotationMatrix;
@@ -679,11 +686,11 @@ void MeGlWindow::DrawObjects(Camera & camera){
 
 	//Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(+3.0f, 0.0f, -5.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), RotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(+3.0f, 0.0f, -5.0f));
+	RotationMatrix = rotate(mat4(), RotationAngle, vec3(0.0f, 1.0f, 0.0f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix;
-	glm::mat4 Cube1ModelToWorldMatrix = TransformMatrix * RotationMatrix;
+	mat4 Cube1ModelToWorldMatrix = TransformMatrix * RotationMatrix;
 
 	glUniformMatrix4fv(FullTransformMatrixUniformLocaiton, 1, GL_FALSE, &FullTransformMatrix[0][0]);
 	glUniformMatrix4fv(ModelToWorldMatrixUniformLocation, 1, GL_FALSE, &Cube1ModelToWorldMatrix[0][0]);
@@ -692,9 +699,9 @@ void MeGlWindow::DrawObjects(Camera & camera){
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-6.0f, 0.0f, -2.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 15.0f, glm::vec3(0.0f, 1.0f, -1.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.5f));
+	TransformMatrix = translate(mat4(), vec3(-6.0f, 0.0f, -2.0f));
+	RotationMatrix = rotate(mat4(), 15.0f, vec3(0.0f, 1.0f, -1.0f));
+	ScaleMatrix = scale(mat4(), vec3(0.5f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix * ScaleMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -706,9 +713,9 @@ void MeGlWindow::DrawObjects(Camera & camera){
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = glm::translate(glm::mat4(), glm::vec3(-1.0f, 4.0f, -2.0f));
-	RotationMatrix = glm::rotate(glm::mat4(), 70.0f, glm::vec3(1.0f, 1.0f, 0.0f));
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(0.8f));
+	TransformMatrix = translate(mat4(), vec3(-1.0f, 4.0f, -2.0f));
+	RotationMatrix = rotate(mat4(), 70.0f, vec3(1.0f, 1.0f, 0.0f));
+	ScaleMatrix = scale(mat4(), vec3(0.8f));
 
 	FullTransformMatrix = WorldToProjectionMatrix * TransformMatrix * RotationMatrix * ScaleMatrix;
 	CubeModelToWorldMatrix = TransformMatrix * RotationMatrix;
@@ -725,7 +732,7 @@ void MeGlWindow::DrawObjects(Camera & camera){
 	glUniform1i(CubeMapUniformLocation, 2);
 
 	glBindVertexArray(cubeVertexArrayObjectID);
-	ScaleMatrix = glm::scale(glm::mat4(), glm::vec3(50.0f, 50.0f, 50.0f));
+	ScaleMatrix = scale(mat4(), vec3(50.0f, 50.0f, 50.0f));
 
 	GLuint SkyboxTransformMatrixUniformLocation = glGetUniformLocation(cubeMapProgramID, "SkyboxTransformMatrix");
 	CameraMatrix[3][0] = 0.0;
@@ -740,7 +747,7 @@ void MeGlWindow::DrawObjects(Camera & camera){
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
 {
 	setFocus();
-	MainCamera.mouseUpdate(glm::vec2(e->x(), e->y()));
+	MainCamera.mouseUpdate(vec2(e->x(), e->y()));
 	repaint();
 }
 
@@ -794,22 +801,22 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		LightCamera.rotate_down();
 		break;
 	case Qt::Key::Key_I:
-		LightPosition += glm::vec3 (0,0,-0.2);
+		LightPosition += vec3 (0,0,-0.2);
 		break;
 	case Qt::Key::Key_K:
-		LightPosition += glm::vec3(0, 0, 0.2);
+		LightPosition += vec3(0, 0, 0.2);
 		break;
 	case Qt::Key::Key_J:
-		LightPosition += glm::vec3(-0.2, 0, -0.0);
+		LightPosition += vec3(-0.2, 0, -0.0);
 		break;
 	case Qt::Key::Key_L:
-		LightPosition += glm::vec3(0.2, 0, -0.0);
+		LightPosition += vec3(0.2, 0, -0.0);
 		break;
 	case Qt::Key::Key_U:
-		LightPosition += glm::vec3(0, 0.2, -0.0);
+		LightPosition += vec3(0, 0.2, -0.0);
 		break;
 	case Qt::Key::Key_O:
-		LightPosition += glm::vec3(0, -0.2, -0.0);
+		LightPosition += vec3(0, -0.2, -0.0);
 	}
 	repaint();
 }

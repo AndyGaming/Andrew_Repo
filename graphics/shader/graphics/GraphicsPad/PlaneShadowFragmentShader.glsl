@@ -13,7 +13,7 @@ uniform vec3 LightPosition;
 uniform vec3 ViewPosition;
 uniform sampler2D tex_temp;
 uniform sampler2D NormalMap;
-uniform float AttenuationFactor;
+uniform float attenuationAmount;
 uniform sampler2D ShadowMap;
 uniform mat4 LightFullTransformMatrix;
 
@@ -27,7 +27,7 @@ void main()
 
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	float distance = length(LightPosition - WorldPosition);
-	float attenuation = 1 / (AttenuationFactor * pow(distance,2));
+	float attenuation = 1 / (attenuationAmount * pow(distance,2));
 	vec3 PreWorldNormal = vec3 (transpose(inverse(M2WMatrix)) * vec4(ObjectSpaceNormal,0));
 	vec3 ActualModelNormal = mix(ObjectSpaceNormal,ModelNormal,clamp(dot(lightVector, PreWorldNormal)*10000,0,1));
 	vec3 WorldNormal = vec3 (transpose(inverse(M2WMatrix)) * vec4(ActualModelNormal,0));

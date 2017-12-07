@@ -14,7 +14,7 @@ protected:
 	void sendContent();
 	void installshaders();
 	void keyPressEvent(QKeyEvent*);
-	void LoadCubeMap();
+	void initTextures();
 	void DrawObjects(Camera & camera);
 	bool checkShaderStatus(GLuint ShaderID);
 	bool checkProgramStatus(GLuint ProgramID);
