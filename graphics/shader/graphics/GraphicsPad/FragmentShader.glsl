@@ -5,7 +5,7 @@ in vec3 AmbientLightColor;
 in vec3 WorldPosition;
 in vec2 f_uv;
 in mat4 TengentToModelTransform;
-in mat4 M2WMatrix;
+in mat4 ModelMatrix;
 in vec3 ObjectSpaceNormal;
 out vec4 fragColor;
 
@@ -17,8 +17,7 @@ uniform float attenuationAmount;
 
 void main()
 {
-	//normalmap
-
+	//normal map
 	vec4 normalmapcolor = texture(NormalMap,f_uv);
 	vec3 FixedNormalVector = (normalmapcolor.xyz - vec3(0.5f,0.5f,0.5f))*2;
 	vec3 ModelNormal = vec3(TengentToModelTransform * vec4(FixedNormalVector,0.0));
@@ -26,12 +25,11 @@ void main()
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	float distance = length(LightPosition - WorldPosition);
 	float attenuation = 1 / (attenuationAmount * pow(distance,2));
-	vec3 PreWorldNormal = vec3 (transpose(inverse(M2WMatrix)) * vec4(ObjectSpaceNormal,0));
+	vec3 PreWorldNormal = vec3 (transpose(inverse(ModelMatrix)) * vec4(ObjectSpaceNormal,0));
 	vec3 ActualModelNormal = mix(ObjectSpaceNormal,ModelNormal,clamp(dot(lightVector, PreWorldNormal)*10000,0,1));
-	vec3 WorldNormal = vec3 (transpose(inverse(M2WMatrix)) * vec4(ActualModelNormal,0));
+	vec3 WorldNormal = vec3 (transpose(inverse(ModelMatrix)) * vec4(ActualModelNormal,0));
 
 	vec4 texColor = texture(tex_temp,f_uv);
-
 	
 	float brightness = clamp(dot(lightVector, WorldNormal),0,1);
 	vec4 diffuseLight =  attenuation * brightness * texColor;
@@ -43,8 +41,5 @@ void main()
 
 	vec3 AmbientLight = AmbientLightColor * texColor.xyz;
 
-//	fragColor = vec4(WorldNormal,1);
 	fragColor = vec4(diffuseLight.xyz + AmbientLight, 1.0);
-//	fragColor = vec4(clamp(vec3(specularIntensity,specularIntensity,specularIntensity),0,1) + AmbientLightColor,1.0);
-	
 }
