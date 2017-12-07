@@ -4,6 +4,7 @@ in layout(location=0) vec4 vertexPositionModel;
 in layout(location=1) vec3 vertexColor;
 in layout(location=2) vec3 vertexNormalModel;
 in layout(location=3) vec2 texCoordModel;
+in layout(location=4) vec3 vertexTangentModel;
 
 out vec3 reflectDir;
 out vec3 refractDir;

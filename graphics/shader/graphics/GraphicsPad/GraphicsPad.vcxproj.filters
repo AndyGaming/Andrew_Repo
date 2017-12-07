@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Mainer.cpp" />
+    <ClCompile Include="MeGlWindow.cpp" />
+    <ClCompile Include="ShapeFactory.cpp" />
+    <ClCompile Include="Camera.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MeGlWindow.h" />
+    <ClInclude Include="Vertex.h" />
+    <ClInclude Include="ShapeData.h" />
+    <ClInclude Include="ShapeFactory.h" />
+    <ClInclude Include="Camera.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VertexShader.glsl" />
+    <None Include="FragmentShader.glsl" />
+    <None Include="CubeLightVertexShader.glsl" />
+    <None Include="CubeLightFragmentShader.glsl" />
+    <None Include="CubeMapFragmentShader.glsl" />
+    <None Include="CubeMapVertexShader.glsl" />
+    <None Include="ShadowMapVertexShader.glsl" />
+    <None Include="ShadowMapFragmentShader.glsl" />
+    <None Include="PlaneShadowVertexShader.glsl" />
+    <None Include="PlaneShadowFragmentShader.glsl" />
+  </ItemGroup>
+</Project>
