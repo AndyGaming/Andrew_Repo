@@ -20,9 +20,9 @@
     <None Include="CubeLightFragmentShader.glsl" />
     <None Include="CubeMapFragmentShader.glsl" />
     <None Include="CubeMapVertexShader.glsl" />
-    <None Include="ShadowMapVertexShader.glsl" />
-    <None Include="ShadowMapFragmentShader.glsl" />
     <None Include="PlaneShadowVertexShader.glsl" />
     <None Include="PlaneShadowFragmentShader.glsl" />
+    <None Include="PortalVertexShader.glsl" />
+    <None Include="PortalFragmentShader.glsl" />
   </ItemGroup>
 </Project>

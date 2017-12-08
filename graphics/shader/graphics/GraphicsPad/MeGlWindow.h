@@ -10,7 +10,7 @@ class MeGlWindow : public QGLWidget
 protected:
 	void initializeGL();
 	void paintGL();
-	void paintCameraViewObjects(Camera & camera);
+	void paintCameraViewObjects(Camera & camera, float fov);
 	void mouseMoveEvent(QMouseEvent* e);
 	void sendContent();
 	void installshaders();
