@@ -43,6 +43,7 @@ vec3 LightPosition(0.0f, 2.5f, -2.0f);
 float RotationAngle = 0.0f;
 vec3 colorVariation = vec3(0.01f, 0.02f, 0.03f);
 bool plusVariation = true;
+vec3 portalCameraPos(0.0f, 2.5f, -2.0f);
 
 const char* MeGlWindow::TexFile[] = { "posx.png","negx.png","negy.png","posy.png","posz.png","negz.png" };
 
@@ -179,6 +180,8 @@ void MeGlWindow::initTextures()
 	glActiveTexture(GL_TEXTURE5);
 	glGenFramebuffers(1, &fboHandleID);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboHandleID);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_DEPTH_ATTACHMENT);
 
 	glGenTextures(1, &renderTexID);
 	glBindTexture(GL_TEXTURE_2D, renderTexID);
@@ -186,25 +189,20 @@ void MeGlWindow::initTextures()
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexID, 0);
-
 	// Portal depth buffer
-	glGenRenderbuffers(1, &portalDepthBufferID);
-	glBindRenderbuffer(GL_RENDERBUFFER, portalDepthBufferID);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 512, 512);
+	glGenFramebuffers(1, &portalDepthBufferID);
+	glBindFramebuffer(GL_FRAMEBUFFER, portalDepthBufferID);
+	//glRenderbufferStorage(GL_DRAW_FRAMEBUFFER, GL_DEPTH_COMPONENT, 512, 512);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glDrawBuffer(GL_DEPTH_ATTACHMENT);
 
-	// Bind depth buffer to FBO
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, portalDepthBufferID);
-	glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	// White texture
-	glActiveTexture(GL_TEXTURE6);
-	GLubyte whiteTex[] = { 255, 255, 255, 255 };
-	glGenTextures(1, &whiteTexID);
-	glBindTexture(GL_TEXTURE_2D, whiteTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whiteTex);
+	//// White texture
+	//glActiveTexture(GL_TEXTURE6);
+	//GLubyte whiteTex[] = { 255, 255, 255, 255 };
+	//glGenTextures(1, &whiteTexID);
+	//glBindTexture(GL_TEXTURE_2D, whiteTexID);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whiteTex);
 }
 
 bool checkStatus(
@@ -417,22 +415,29 @@ void MeGlWindow::paintGL()
 	
 	LightCamera.setPosition(LightPosition);
 	paintCameraViewObjects(LightCamera, 60.0f);
-	
+	/*
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, width(), height());
+	glViewport(0, 0, width(), height());*/
 
 	/////////////////////
-	glBindFramebuffer(GL_FRAMEBUFFER, fboHandleID);
-	glViewport(0, 0, 512, 512);
-	glUniform1i(glGetUniformLocation(portalProgramID, "portalTexture"), 6);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboHandleID);
+	//glUseProgram(portalProgramID);
+	glViewport(0, 0, width(), height());
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexID, 0);
+	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, portalDepthBufferID, 0);
+	status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+	assert(status == GL_FRAMEBUFFER_COMPLETE);
 
-	PortalCamera.setPosition(vec3(0.0f, 2.5f, -2.0f));
+
+	PortalCamera.setPosition(portalCameraPos);
 	paintCameraViewObjects(PortalCamera, 80.0f);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glViewport(0, 0, width(), height());
-	glUniform1i(glGetUniformLocation(portalProgramID, "portalTexture"), 5);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//glUniform1i(glGetUniformLocation(portalProgramID, "portalTexture"), 5);
 
 
 	mat4 projectionMatrix = perspective(60.0f, ((float)width() / height()), 0.3f, 100.0f);
@@ -503,8 +508,6 @@ void MeGlWindow::paintGL()
 
 	TextureUniformLocation = glGetUniformLocation(shadowProgramID, "tex_temp");
 	glUniform1i(TextureUniformLocation, 0);
-	//NormalmapUniformLocation = glGetUniformLocation(shadowProgramID, "NormalMap");
-	//glUniform1i(NormalmapUniformLocation, 1);
 
 	GLint ShadowMapUniformLocation = glGetUniformLocation(shadowProgramID, "ShadowMap");
 	glUniform1i(ShadowMapUniformLocation, 4);
@@ -617,6 +620,7 @@ void MeGlWindow::paintGL()
 	FullTransformMatrix = WorldToProjectionMatrix * CubeModelToWorldMatrix;
 
 	glUniformMatrix4fv(portalTransformMatUniLoc, 1, GL_FALSE, &FullTransformMatrix[0][0]);
+	glUniform1i(glGetUniformLocation(portalProgramID, "portalTexture"), 5);
 
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)(cubeIndexByteOffset));
 
@@ -815,17 +819,11 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_D:
 		MainCamera.move_rightward();
 		break;
-	case Qt::Key::Key_R:
+	case Qt::Key::Key_Q:
 		MainCamera.move_upward();
 		break;
-	case Qt::Key::Key_F:
-		MainCamera.move_downward();
-		break;
-	case Qt::Key::Key_Q:
-		MainCamera.rotate_left();
-		break;
 	case Qt::Key::Key_E:
-		MainCamera.rotate_right();
+		MainCamera.move_downward();
 		break;
 	case Qt::Key::Key_Z:
 		MainCamera.rotate_up();
@@ -833,16 +831,16 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 	case Qt::Key::Key_C:
 		MainCamera.rotate_down();
 		break;
-	case Qt::Key::Key_T:
+	case Qt::Key::Key_Left:
 		LightCamera.rotate_left();
 		break;
-	case Qt::Key::Key_Y:
+	case Qt::Key::Key_Right:
 		LightCamera.rotate_right();
 		break;
-	case Qt::Key::Key_G:
+	case Qt::Key::Key_Up:
 		LightCamera.rotate_up();
 		break;
-	case Qt::Key::Key_H:
+	case Qt::Key::Key_Down:
 		LightCamera.rotate_down();
 		break;
 	case Qt::Key::Key_I:
@@ -862,6 +860,14 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		break;
 	case Qt::Key::Key_O:
 		LightPosition += vec3(0, -0.2, -0.0);
+		break;
+	case Qt::Key::Key_M:
+		portalCameraPos += vec3(0.2, 0, -0.0);
+		break;
+	case Qt::Key::Key_N:
+		portalCameraPos += vec3(-0.2, -0, -0.0);
+		break;
+
 	}
 	repaint();
 }
