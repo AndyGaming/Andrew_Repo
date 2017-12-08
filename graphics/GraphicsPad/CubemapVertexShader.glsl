@@ -21,7 +21,7 @@ void main()
 	bool b = true;
 
 	if (b) {
-		reflectDir = vec3(vertexPositionModel);
+		reflectDir = -vec3(vertexPositionModel);
 	}
 	else {
 		vec3 worldPos = vec3(modelToWorldMatrix * vertexPositionModel);

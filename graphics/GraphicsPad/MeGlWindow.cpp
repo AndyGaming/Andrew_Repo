@@ -10,10 +10,7 @@
 #include <fstream>
 
 using namespace std;
-using glm::vec3;
-using glm::vec4;
-using glm::mat3;
-using glm::mat4;
+using namespace glm;
 
 const uint NUM_VERTICES_PER_TRI = 3;
 const uint NUM_FLOATS_PER_VERTICE = 14;
@@ -108,7 +105,7 @@ void MeGlWindow::paintGL()
 	glUseProgram(programID);
 	
 	// Projection matrix
-	mat4 viewToProjectionMatrix = glm::perspective(60.0f, ((float)width()) / height(), 0.1f, 20.0f);
+	mat4 viewToProjectionMatrix = perspective(60.0f, ((float)width()) / height(), 0.1f, 100.0f);
 	// View matrix
 	mat4 worldToViewMatrix = camera.getWorldToViewMatrix();
 	// Projection * View
@@ -119,7 +116,6 @@ void MeGlWindow::paintGL()
 	GLuint fullTransformUniLoc = glGetUniformLocation(programID, "MVP");
 	GLuint modelToWorldMatUniLoc = glGetUniformLocation(programID, "modelToWorldMatrix");
 	GLuint normalMatrixUniLoc = glGetUniformLocation(programID, "normalMatrix");
-	//GLuint cm_modelMatrixUniLoc = glGetUniformLocation(cubeMapProgramID, "modelToWorldMatrix");
 
 	// Ambient light
 	GLuint ambientLightUniLoc = glGetUniformLocation(programID, "ambientLight");
@@ -134,15 +130,13 @@ void MeGlWindow::paintGL()
 	GLuint cameraPositionWorldUniLoc = glGetUniformLocation(programID, "cameraPositionWorld");
 	vec3 cameraPosition = camera.getPosition();
 	glUniform3fv(cameraPositionWorldUniLoc, 1, &cameraPosition[0]);
-	//GLuint cm_cameraPositionWorldUniLoc= glGetUniformLocation(cubeMapProgramID, "cameraPositionWorld");
-	//glUniform3fv(cm_cameraPositionWorldUniLoc, 1, &lightPositionWorld[0]);
 
 	// Cube
 	glBindVertexArray(cubeVertexArrayObjectID);
 
-	mat4 cubeTranslateMatrix = glm::translate(0.0f, 1.0f, -3.0f);
-	mat4 cubeRotaionMatrix_x = glm::rotate(cubeAngle.x, vec3(1.0f, 0.0f, 0.0f));
-	mat4 cubeRotaionMatrix_y = glm::rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
+	mat4 cubeTranslateMatrix = translate(0.0f, 1.0f, -3.0f);
+	mat4 cubeRotaionMatrix_x = rotate(cubeAngle.x, vec3(1.0f, 0.0f, 0.0f));
+	mat4 cubeRotaionMatrix_y = rotate(cubeAngle.y, vec3(0.0f, 1.0f, 0.0f));
 
 	mat4 cubeModelToWorldMatrix = cubeTranslateMatrix * cubeRotaionMatrix_x * cubeRotaionMatrix_y;
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
@@ -150,30 +144,29 @@ void MeGlWindow::paintGL()
 	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
 
-	//glUniformMatrix4fv(cm_modelMatrixUniLoc, 1, GL_FALSE, &cubeModelToWorldMatrix[0][0]);
-	mat3 normalMatrix = glm::transpose(glm::inverse(mat3(worldToViewMatrix * cubeModelToWorldMatrix)));
+	mat3 normalMatrix = transpose(inverse(mat3(worldToViewMatrix * cubeModelToWorldMatrix)));
 	glUniformMatrix3fv(normalMatrixUniLoc, 1, GL_FALSE, &normalMatrix[0][0]);
+	glUniform1i(glGetUniformLocation(programID, "normalMap_1"), 0);
 
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 
 	// Plane
 	glBindVertexArray(planeVertexArrayObjectID);
 
-	mat4 planeModelToWorldMatrix = glm::mat4();
+	mat4 planeModelToWorldMatrix = mat4();
 	glUniformMatrix4fv(modelToWorldMatUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 
 	MVP = worldToProjectionMatrix * planeModelToWorldMatrix;
 	glUniformMatrix4fv(fullTransformUniLoc, 1, GL_FALSE, &MVP[0][0]);
 
-	//glUniformMatrix4fv(cm_modelMatrixUniLoc, 1, GL_FALSE, &planeModelToWorldMatrix[0][0]);
 	glDrawElements(GL_TRIANGLES, planeIndices, GL_UNSIGNED_SHORT, (void*)planeIndexByteOffset);
 
 	// Lightbulb
 	//glUseProgram(programID);
 	glBindVertexArray(cubeVertexArrayObjectID);
 
-	cubeTranslateMatrix = glm::translate(lightPos);
-	mat4 cubeScaleMatrix = glm::scale(vec3(0.1f, 0.1f, 0.1f));
+	cubeTranslateMatrix = translate(lightPos);
+	mat4 cubeScaleMatrix = scale(vec3(0.1f, 0.1f, 0.1f));
 
 	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
 	MVP = worldToProjectionMatrix * cubeModelToWorldMatrix;
@@ -185,8 +178,8 @@ void MeGlWindow::paintGL()
 	glUseProgram(cubeMapProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
 
-	cubeTranslateMatrix = glm::mat4();
-	cubeScaleMatrix = glm::scale(vec3(20.0f));
+	cubeTranslateMatrix = mat4();
+	cubeScaleMatrix = scale(vec3(20.0f));
 
 	cubeModelToWorldMatrix = cubeTranslateMatrix * cubeScaleMatrix;
 	worldToViewMatrix[3][0] = 0.0;
@@ -195,6 +188,7 @@ void MeGlWindow::paintGL()
 	MVP = viewToProjectionMatrix * worldToViewMatrix * cubeModelToWorldMatrix;
 	GLuint skyboxFullTransformMatUniLoc = glGetUniformLocation(cubeMapProgramID, "MVP");
 	glUniformMatrix4fv(skyboxFullTransformMatUniLoc, 1, GL_FALSE, &MVP[0][0]);
+	glUniform1i(glGetUniformLocation(cubeMapProgramID, "cubeMapTex"), 1);
 
 	glDrawElements(GL_TRIANGLES, cubeIndices, GL_UNSIGNED_SHORT, (void*)cubeIndexByteOffset);
 }
@@ -202,7 +196,7 @@ void MeGlWindow::paintGL()
 void MeGlWindow::mouseMoveEvent(QMouseEvent* e)
 {
 	setFocus();
-	camera.mouseUpdate(glm::vec2(e->x(), e->y()));
+	camera.mouseUpdate(vec2(e->x(), e->y()));
 	repaint();
 }
 
@@ -386,7 +380,8 @@ void MeGlWindow::initTextures()
 	string baseTexPath = "../Textures/";
 
 	// Normal map - Shapes
-	QImage tex_N_1 = QGLWidget::convertToGLFormat(QImage("../Textures/Shapes.png", "png"));
+	string texName = baseTexPath + "Shapes.png";
+	QImage tex_N_1 = QGLWidget::convertToGLFormat(QImage(texName.c_str(), "png"));
 
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &textureID);
@@ -396,7 +391,6 @@ void MeGlWindow::initTextures()
 	glTexImage2D(
 		GL_TEXTURE_2D, 0, GL_RGBA, tex_N_1.width(), tex_N_1.height(),
 		0, GL_RGBA, GL_UNSIGNED_BYTE, tex_N_1.bits());
-	glUniform1i(glGetUniformLocation(programID, "normalMap_1"), 0);
 
 	// Cube map
 	glActiveTexture(GL_TEXTURE1);
@@ -416,7 +410,7 @@ void MeGlWindow::initTextures()
 	};
 
 	for (int i = 0; i < 6; i++) {
-		string texName = baseTexPath + suffix[i] + ".png";
+		texName = baseTexPath + suffix[i] + ".png";
 		QImage cubeMap = QGLWidget::convertToGLFormat(QImage(texName.c_str(), "png"));
 		glTexImage2D(
 			targets[i], 0, GL_RGBA, cubeMap.width(), cubeMap.height(),
@@ -428,7 +422,6 @@ void MeGlWindow::initTextures()
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glUniform1i(glGetUniformLocation(cubeMapProgramID, "cubeMapTex"), 1);
 
 	glDisable(GL_TEXTURE_2D);
 }
@@ -438,7 +431,7 @@ void MeGlWindow::initializeGL()
 	setMouseTracking(false);
 	glewInit();
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	sendContent();
 	initTextures();
 	installShaders();
