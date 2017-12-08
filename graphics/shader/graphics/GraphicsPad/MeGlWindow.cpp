@@ -28,6 +28,7 @@ GLuint portalProgramID;
 GLuint frameBufferID;
 GLuint frameTextureID;
 GLuint frameDepthID;
+GLuint renderDepthID;
 GLuint fboHandleID;
 GLuint renderTexID;
 GLuint portalDepthBufferID;
@@ -43,7 +44,7 @@ vec3 LightPosition(0.0f, 2.5f, -2.0f);
 float RotationAngle = 0.0f;
 vec3 colorVariation = vec3(0.01f, 0.02f, 0.03f);
 bool plusVariation = true;
-vec3 portalCameraPos(0.0f, 2.5f, -2.0f);
+vec3 portalCameraPos(0.0f, 3.0f, -2.0f);
 
 const char* MeGlWindow::TexFile[] = { "posx.png","negx.png","negy.png","posy.png","posz.png","negz.png" };
 
@@ -185,16 +186,23 @@ void MeGlWindow::initTextures()
 
 	glGenTextures(1, &renderTexID);
 	glBindTexture(GL_TEXTURE_2D, renderTexID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	// Portal depth buffer
-	glGenFramebuffers(1, &portalDepthBufferID);
-	glBindFramebuffer(GL_FRAMEBUFFER, portalDepthBufferID);
-	//glRenderbufferStorage(GL_DRAW_FRAMEBUFFER, GL_DEPTH_COMPONENT, 512, 512);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	glDrawBuffer(GL_DEPTH_ATTACHMENT);
+	//// Portal depth buffer
+	//glGenFramebuffers(1, &portalDepthBufferID);
+	//glBindFramebuffer(GL_FRAMEBUFFER, portalDepthBufferID);
+	////glRenderbufferStorage(GL_DRAW_FRAMEBUFFER, GL_DEPTH_COMPONENT, 512, 512);
+	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	//glDrawBuffer(GL_DEPTH_ATTACHMENT);
+
+	glActiveTexture(GL_TEXTURE6);
+	glGenTextures(1, &renderDepthID);
+	glBindTexture(GL_TEXTURE_2D, renderDepthID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width(), height(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 
 	//// White texture
@@ -424,9 +432,10 @@ void MeGlWindow::paintGL()
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboHandleID);
 	//glUseProgram(portalProgramID);
 	glViewport(0, 0, width(), height());
+	//glViewport(0, 0, 512, 512);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexID, 0);
-	//glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, portalDepthBufferID, 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, renderDepthID, 0);
 	status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 	assert(status == GL_FRAMEBUFFER_COMPLETE);
 
@@ -596,10 +605,10 @@ void MeGlWindow::paintGL()
 
 	// Color changing
 	if (plusVariation) {
-		colorVariation += vec3(0.0001f, 0.0003f, 0.0005f);
+		colorVariation += vec3(0.0002f, 0.0006f, 0.001f);
 	}
 	else {
-		colorVariation -= vec3(0.0001f, 0.0003f, 0.0005f);
+		colorVariation -= vec3(0.0002f, 0.0006f, 0.001f);
 	}
 	if (colorVariation.x >= 1 || colorVariation.y >= 1 || colorVariation.z >= 1) {
 		plusVariation = false;
@@ -613,7 +622,7 @@ void MeGlWindow::paintGL()
 	// Portal cube
 	glUseProgram(portalProgramID);
 	glBindVertexArray(cubeVertexArrayObjectID);
-	TransformMatrix = translate(mat4(), vec3(0.0f, 2.0f, 0.0f));
+	TransformMatrix = translate(mat4(), vec3(-3.0f, 2.0f, 0.0f));
 
 	GLuint portalTransformMatUniLoc = glGetUniformLocation(portalProgramID, "portalMVP");
 	CubeModelToWorldMatrix = TransformMatrix;
@@ -866,6 +875,12 @@ void MeGlWindow::keyPressEvent(QKeyEvent* e)
 		break;
 	case Qt::Key::Key_N:
 		portalCameraPos += vec3(-0.2, -0, -0.0);
+		break;
+	case Qt::Key::Key_B:
+		portalCameraPos += vec3(0.0, 0.2, -0.0);
+		break;
+	case Qt::Key::Key_V:
+		portalCameraPos += vec3(0.0, -0.2, -0.0);
 		break;
 
 	}
