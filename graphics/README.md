@@ -1,3 +1,4 @@
-# Shader Development class working repo
+# Shader Development
 
-All materials are derived from Jamie King. Most of the content in this folder are not made by me. 
+Working repo for shader class. 
+
